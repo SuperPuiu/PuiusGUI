@@ -1,6 +1,8 @@
 # Puius SDL Layer
 This project aims to provide a small and pretty much independent file to use when creating games using SDL2.
 
+The project is mostly PuiusPhysics and PuiusGUI combined.
+
 Contains:
 - Simple collision functions;
 - Simple drawing functions;
@@ -9,7 +11,7 @@ Contains:
 - Input handling function;
 
 # Requirements
-To build, PuiusSDL_Layer.c requires SDL.h and SDL_image.h.
+To build, PuiusSDL_Layer.c requires SDL.h and SDL_image.h and SDL_ttf.h.
 
 # License
 Both PuiusSDL_Layer.c and PuiusSDL_Layer.h are licensed under MIT license.
