@@ -11,4 +11,4 @@ Contains:
 To build, PuiusGUI.c requires SDL.h and SDL_image.h and SDL_ttf.h.
 
 # License
-PuiusGUI.c and PuiusGUI.h are licensed under zlib license.
+PuiusGUI.c and PuiusGUI.h are licensed under the MIT license.
