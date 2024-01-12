@@ -1,23 +1,14 @@
 /*
- ________  ___  ___  ___  ___  ___  ________           ________  ___  ___  ___     
-|\   __  \|\  \|\  \|\  \|\  \|\  \|\   ____\         |\   ____\|\  \|\  \|\  \    
-\ \  \|\  \ \  \\\  \ \  \ \  \\\  \ \  \___|_        \ \  \___|\ \  \\\  \ \  \   
- \ \   ____\ \  \\\  \ \  \ \  \\\  \ \_____  \        \ \  \  __\ \  \\\  \ \  \  
-  \ \  \___|\ \  \\\  \ \  \ \  \\\  \|____|\  \        \ \  \|\  \ \  \\\  \ \  \ 
+ ________  ___  ___  ___  ___  ___  ________           ________  ___  ___  ___
+|\   __  \|\  \|\  \|\  \|\  \|\  \|\   ____\         |\   ____\|\  \|\  \|\  \
+\ \  \|\  \ \  \\\  \ \  \ \  \\\  \ \  \___|_        \ \  \___|\ \  \\\  \ \  \
+ \ \   ____\ \  \\\  \ \  \ \  \\\  \ \_____  \        \ \  \  __\ \  \\\  \ \  \
+  \ \  \___|\ \  \\\  \ \  \ \  \\\  \|____|\  \        \ \  \|\  \ \  \\\  \ \  \
    \ \__\    \ \_______\ \__\ \_______\____\_\  \        \ \_______\ \_______\ \__\
     \|__|     \|_______|\|__|\|_______|\_________\        \|_______|\|_______|\|__|
-                                      \|_________|                                 
-                                                                                   
-  Puius SDL Layer acts as a support for making games in SDL2, having very little dependencies.
-It provides multiple structs and functions, such as simple collision functions and drawing functions, generally everything required for video games development.
-List of provided functions:
-* TextButtons, ImageButtons, TextBoxes, Frames, constructors;
-* Structs such as Vector2, Color3, rectProperties, inputStruct;
-* handleInput() for easy handling of input;
-* DrawRectangleRec, DrawRectangleRecEx for drawing;
-* CollisionRect, CollisionRectPoint for basic collision;
-* Lerp for smooth value changing;
-
+                                      \|_________|
+ PuiusGUI is a small GUI library which is made around SDL2, made out of two files.
+It provides one Color3 struct, and multiple GUI objects.
 The project is licensed under MIT license. SDL_image.h, SDL.h and SDL_ttf.h are required to compile.
 */
 
