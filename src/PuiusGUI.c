@@ -260,6 +260,10 @@ void updateGUI(int GUI_Index) {
     SDL_Surface *surfaceMessage = TTF_RenderText_Blended_Wrapped(Arial, guiArray[GUI_Index].Text, Color, 0);
     SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
 
+    SDL_GetClipRect(surfaceMessage, &guiArray[GUI_Index].rect);
+    guiArray[GUI_Index].rect.x = guiArray[GUI_Index].PositionX;
+    guiArray[GUI_Index].rect.y = guiArray[GUI_Index].PositionY;
+
     guiArray[GUI_Index].TextureText = Message;
     SDL_FreeSurface(surfaceMessage);
 }
@@ -374,19 +378,14 @@ void renderGUI() {
         int textWidth = 0;
         int textHeight = 0;
 
-        TTF_SizeText(Arial, guiArray[i].Text, &textWidth, &textHeight);
-
-        SDL_Rect TextRect;
-        TextRect.x = guiArray[i].PositionX;
-        TextRect.y = guiArray[i].PositionY;
-        TextRect.w = textWidth;
-        TextRect.h = textHeight;
+        TTF_SizeUTF8(Arial, guiArray[i].Text, &textWidth, &textHeight);
 
         handleGUI(i);
 
         if(guiArray[i].Type != IMAGELABEL && guiArray[i].Type != IMAGEBUTTON) {
             DrawRectangleRec(guiArray[i]);
-            SDL_RenderCopy(globalRenderer, guiArray[i].TextureText, NULL, &TextRect);
+            SDL_RenderCopy(globalRenderer, guiArray[i].TextureText, NULL, &guiArray[i].rect);
+            // SDL_BlitSurface(guiArray[i].TextureText, NULL, globalWindow, NULL);
         }
         else
             DrawTextureEx(guiArray[i]);
