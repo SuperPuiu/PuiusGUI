@@ -57,6 +57,11 @@ struct guiProperties {
   int TextEditable;
   int Focused;
 
+  void (*MouseDown)(int guiIndex);
+  void (*MouseEnter)(int guiIndex);
+  void (*FocusLost)(int guiIndex);
+
+  SDL_Rect rect;
   SDL_Texture *TextureText;
   char *Text;
 };
