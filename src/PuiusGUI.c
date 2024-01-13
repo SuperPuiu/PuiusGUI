@@ -21,6 +21,10 @@ int leftButtonDown = 0;
 int isFocused = 0;
 int currentGUI_Focused = -1;
 
+void defaultCallback(int a) {
+
+}
+
 struct Color3 initColor3(int R, int G, int B) {
     struct Color3 Color;
 
@@ -79,7 +83,7 @@ void DrawTextureEx(struct guiProperties rectangle) {
     }
 }
 
-void writeToTextBox(SDL_Event event) {
+void writeToTextBox(char *str) {
     size_t textLength = strlen(guiArray[currentGUI_Focused].Text);
     char *alloc = malloc(textLength + 1 + 1);
 
@@ -87,27 +91,20 @@ void writeToTextBox(SDL_Event event) {
         printf("[PUIUS GUI] Failed to allocate memory for new string when writing to a textbox.");
         exit(1);
     }
-
     strcpy(alloc, guiArray[currentGUI_Focused].Text);
-    // printf("%s\n", SDL_GetKeyName(event.key.keysym.sym));
-    switch (event.key.keysym.sym) {
-        case SDLK_SPACE:
-            alloc[textLength] = ' ';
-            break;
-        case SDLK_RETURN:
-            alloc[textLength] = '\n';
-            break;
-        case SDLK_BACKSPACE:
-            alloc[textLength - 1] = 0;
-            break;
-        default:
-            alloc[textLength] = SDL_GetKeyName(event.key.keysym.sym)[0];
-            break;
 
+    if (strcmp(str, "ENTER") == 0) {
+        alloc[textLength] = '\n';
+        alloc[textLength + 1] = '\0';
     }
-    alloc[textLength + 1] = '\0';
-    guiArray[currentGUI_Focused].Text = alloc;
+    else if(strcmp(str, "BACKSPACE") == 0) {
+        alloc[textLength - 1] = 0;
+    }
+    else {
+        strcat(alloc, str);
+    }
 
+    guiArray[currentGUI_Focused].Text = alloc;
     updateGUI(currentGUI_Focused);
 }
 
@@ -120,119 +117,119 @@ void processInput(struct inputStruct *input) {
                 input->SDL_QUIT = 1;
                 break;
             case SDL_KEYDOWN:
-                if (isFocused) {
-                    writeToTextBox(event);
-                }
-
                 if(event.key.keysym.sym == SDLK_a)
                     input->A = 1;
-                if(event.key.keysym.sym == SDLK_b)
+                else if(event.key.keysym.sym == SDLK_b)
                     input->B = 1;
-                if(event.key.keysym.sym == SDLK_c)
+                else if(event.key.keysym.sym == SDLK_c)
                     input->C = 1;
-                if(event.key.keysym.sym == SDLK_d)
+                else if(event.key.keysym.sym == SDLK_d)
                     input->D = 1;
-                if(event.key.keysym.sym == SDLK_e)
+                else if(event.key.keysym.sym == SDLK_e)
                     input->E = 1;
-                if(event.key.keysym.sym == SDLK_f)
+                else if(event.key.keysym.sym == SDLK_f)
                     input->F = 1;
-                if(event.key.keysym.sym == SDLK_g)
+                else if(event.key.keysym.sym == SDLK_g)
                     input->G = 1;
-                if(event.key.keysym.sym == SDLK_h)
+                else if(event.key.keysym.sym == SDLK_h)
                     input->H = 1;
-                if(event.key.keysym.sym == SDLK_i)
+                else if(event.key.keysym.sym == SDLK_i)
                     input->I = 1;
-                if(event.key.keysym.sym == SDLK_j)
+                else if(event.key.keysym.sym == SDLK_j)
                     input->J = 1;
-                if(event.key.keysym.sym == SDLK_k)
+                else if(event.key.keysym.sym == SDLK_k)
                     input->K = 1;
-                if(event.key.keysym.sym == SDLK_l)
+                else if(event.key.keysym.sym == SDLK_l)
                     input->L = 1;
-                if(event.key.keysym.sym == SDLK_m)
+                else if(event.key.keysym.sym == SDLK_m)
                     input->M = 1;
-                if(event.key.keysym.sym == SDLK_n)
+                else if(event.key.keysym.sym == SDLK_n)
                     input->N = 1;
-                if(event.key.keysym.sym == SDLK_o)
+                else if(event.key.keysym.sym == SDLK_o)
                     input->O = 1;
-                if(event.key.keysym.sym == SDLK_p)
+                else if(event.key.keysym.sym == SDLK_p)
                     input->P = 1;
-                if(event.key.keysym.sym == SDLK_q)
+                else if(event.key.keysym.sym == SDLK_q)
                     input->Q = 1;
-                if(event.key.keysym.sym == SDLK_r)
+                else if(event.key.keysym.sym == SDLK_r)
                     input->R = 1;
-                if(event.key.keysym.sym == SDLK_s)
+                else if(event.key.keysym.sym == SDLK_s)
                     input->S = 1;
-                if(event.key.keysym.sym == SDLK_t)
+                else if(event.key.keysym.sym == SDLK_t)
                     input->T = 1;
-                if(event.key.keysym.sym == SDLK_u)
+                else if(event.key.keysym.sym == SDLK_u)
                     input->U = 1;
-                if(event.key.keysym.sym == SDLK_v)
+                else if(event.key.keysym.sym == SDLK_v)
                     input->V = 1;
-                if(event.key.keysym.sym == SDLK_w)
+                else if(event.key.keysym.sym == SDLK_w)
                     input->W = 1;
-                if(event.key.keysym.sym == SDLK_w)
+                else if(event.key.keysym.sym == SDLK_w)
                     input->X = 1;
-                if(event.key.keysym.sym == SDLK_x)
+                else if(event.key.keysym.sym == SDLK_x)
                     input->Y = 1;
-                if(event.key.keysym.sym == SDLK_y)
+                else if(event.key.keysym.sym == SDLK_y)
                     input->Z = 1;
-                if(event.key.keysym.sym == SDLK_ESCAPE)
+                else if(event.key.keysym.sym == SDLK_ESCAPE)
                     input->ESC = 1;
+                else if(event.key.keysym.sym == SDLK_RETURN)
+                    writeToTextBox("ENTER");
+                else if(event.key.keysym.sym == SDLK_BACKSPACE)
+                    writeToTextBox("BACKSPACE");
                 break;
             case SDL_KEYUP:
                 if(event.key.keysym.sym == SDLK_a)
                    input->A = 0;
-                if(event.key.keysym.sym == SDLK_b)
+                else if(event.key.keysym.sym == SDLK_b)
                    input->B = 0;
-                if(event.key.keysym.sym == SDLK_c)
+                else if(event.key.keysym.sym == SDLK_c)
                    input->C = 0;
-                if(event.key.keysym.sym == SDLK_d)
+                else if(event.key.keysym.sym == SDLK_d)
                    input->D = 0;
-                if(event.key.keysym.sym == SDLK_e)
+                else if(event.key.keysym.sym == SDLK_e)
                    input->E = 0;
-                if(event.key.keysym.sym == SDLK_f)
+                else if(event.key.keysym.sym == SDLK_f)
                    input->F = 0;
-                if(event.key.keysym.sym == SDLK_g)
+                else if(event.key.keysym.sym == SDLK_g)
                    input->G = 0;
-                if(event.key.keysym.sym == SDLK_h)
+                else if(event.key.keysym.sym == SDLK_h)
                    input->H = 0;
-                if(event.key.keysym.sym == SDLK_i)
+                else if(event.key.keysym.sym == SDLK_i)
                    input->I = 0;
-                if(event.key.keysym.sym == SDLK_j)
+                else if(event.key.keysym.sym == SDLK_j)
                    input->J = 0;
-                if(event.key.keysym.sym == SDLK_k)
+                else if(event.key.keysym.sym == SDLK_k)
                    input->K = 0;
-                if(event.key.keysym.sym == SDLK_l)
+                else if(event.key.keysym.sym == SDLK_l)
                    input->L = 0;
-                if(event.key.keysym.sym == SDLK_m)
+                else if(event.key.keysym.sym == SDLK_m)
                    input->M = 0;
-                if(event.key.keysym.sym == SDLK_n)
+                else if(event.key.keysym.sym == SDLK_n)
                    input->N = 0;
-                if(event.key.keysym.sym == SDLK_o)
+                else if(event.key.keysym.sym == SDLK_o)
                    input->O = 0;
-                if(event.key.keysym.sym == SDLK_p)
+                else if(event.key.keysym.sym == SDLK_p)
                    input->P = 0;
-                if(event.key.keysym.sym == SDLK_q)
+                else if(event.key.keysym.sym == SDLK_q)
                    input->Q = 0;
-                if(event.key.keysym.sym == SDLK_r)
+                else if(event.key.keysym.sym == SDLK_r)
                    input->R = 0;
-                if(event.key.keysym.sym == SDLK_s)
+                else if(event.key.keysym.sym == SDLK_s)
                    input->S = 0;
-                if(event.key.keysym.sym == SDLK_t)
+                else if(event.key.keysym.sym == SDLK_t)
                    input->T = 0;
-                if(event.key.keysym.sym == SDLK_u)
+                else if(event.key.keysym.sym == SDLK_u)
                    input->U = 0;
-                if(event.key.keysym.sym == SDLK_v)
+                else if(event.key.keysym.sym == SDLK_v)
                    input->V = 0;
-                if(event.key.keysym.sym == SDLK_w)
+                else if(event.key.keysym.sym == SDLK_w)
                    input->W = 0;
-                if(event.key.keysym.sym == SDLK_x)
+                else if(event.key.keysym.sym == SDLK_x)
                    input->X = 0;
-                if(event.key.keysym.sym == SDLK_y)
+                else if(event.key.keysym.sym == SDLK_y)
                    input->Y = 0;
-                if(event.key.keysym.sym == SDLK_z)
+                else if(event.key.keysym.sym == SDLK_z)
                    input->Z = 0;
-                if(event.key.keysym.sym == SDLK_ESCAPE)
+                else if(event.key.keysym.sym == SDLK_ESCAPE)
                    input->ESC = 0;
                 break;
             case SDL_MOUSEMOTION:
@@ -250,6 +247,10 @@ void processInput(struct inputStruct *input) {
                     input->LEFT_BUTTON = 1;
                 }
                 break;
+            case SDL_TEXTINPUT:
+                writeToTextBox(event.text.text);
+            case SDL_TEXTEDITING:
+
         }
     }
 }
@@ -287,10 +288,15 @@ void handleGUI(int currentGUI) {
         guiArray[currentGUI].Hovered = 1;
 
         if (leftButtonDown) {
+            if (guiArray[currentGUI].Pressed == 0)
+                guiArray[currentGUI].MouseDown(currentGUI);
+
             guiArray[currentGUI].Pressed = 1;
             if (isFocused) {
                 currentGUI_Focused = currentGUI;
             } else {
+                SDL_StartTextInput();
+
                 currentGUI_Focused = currentGUI;
                 isFocused = 1;
                 guiArray[currentGUI].Focused = 1;
@@ -334,6 +340,11 @@ int ConstructGUI(enum GUI_TYPE GUI) {
 
         newGUI.TextColor = TextColor;
         newGUI.BackgroundColor = BackgroundColor;
+
+        // Ensure that no pointer is left which could trigger an error
+        newGUI.MouseEnter = defaultCallback;
+        newGUI.MouseDown = defaultCallback;
+        newGUI.FocusLost = defaultCallback;
 
         SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Arial, "Text", BLACK);
         SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
@@ -385,7 +396,6 @@ void renderGUI() {
         if(guiArray[i].Type != IMAGELABEL && guiArray[i].Type != IMAGEBUTTON) {
             DrawRectangleRec(guiArray[i]);
             SDL_RenderCopy(globalRenderer, guiArray[i].TextureText, NULL, &guiArray[i].rect);
-            // SDL_BlitSurface(guiArray[i].TextureText, NULL, globalWindow, NULL);
         }
         else
             DrawTextureEx(guiArray[i]);
