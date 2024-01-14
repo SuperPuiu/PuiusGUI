@@ -134,17 +134,32 @@ void writeToTextBox(char *str) {
     if (strcmp(str, "ENTER") == 0) {
         alloc[textLength] = '\n';
         alloc[textLength + (cursor)] = '\0';
+
+        if (cursor < strlen(alloc))
+            cursor += 1;
     }
     else if(strcmp(str, "BACKSPACE") == 0) {
         for (int i = (cursor - 1); alloc[i] != '\0'; i++) {
             alloc[i] = alloc[i + 1];
         }
+
+        if (cursor > 0)
+            cursor -= 1;
     }
     else {
-        strcat(alloc, str);
-    }
+        // TODO: Make this work with cursor
 
-    cursor = strlen(alloc);
+        for (int i = cursor; i < strlen(alloc); i++) {
+            alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+        }
+
+        if (alloc[cursor] == '\0')
+            alloc[cursor + 1] = '\0';
+        alloc[cursor] = str[0];
+
+        if (cursor < strlen(alloc))
+            cursor += 1;
+    }
 
     guiArray[currentGUI_Focused].Text = alloc;
     updateGUI(currentGUI_Focused);
