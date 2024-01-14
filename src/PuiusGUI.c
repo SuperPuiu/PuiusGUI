@@ -120,6 +120,8 @@ void writeToTextBox(char *str) {
         return;
     }
 
+    printf("%i\n", cursor);
+
     size_t textLength = strlen(guiArray[currentGUI_Focused].Text);
     char *alloc = malloc(textLength + 1 + 1);
 
@@ -132,20 +134,17 @@ void writeToTextBox(char *str) {
     if (strcmp(str, "ENTER") == 0) {
         alloc[textLength] = '\n';
         alloc[textLength + (cursor)] = '\0';
-
-        cursor = strlen(alloc);
     }
     else if(strcmp(str, "BACKSPACE") == 0) {
         for (int i = (cursor - 1); alloc[i] != '\0'; i++) {
             alloc[i] = alloc[i + 1];
         }
-
-        cursor = strlen(alloc);
     }
     else {
         strcat(alloc, str);
-        cursor = strlen(alloc);
     }
+
+    cursor = strlen(alloc);
 
     guiArray[currentGUI_Focused].Text = alloc;
     updateGUI(currentGUI_Focused);
