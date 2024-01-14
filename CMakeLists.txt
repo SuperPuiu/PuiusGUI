@@ -3,7 +3,7 @@ project(puiusgui)
 
 file(GLOB files CONFIGURE_DEPENDS "src/*.c")
 file(GLOB tests CONFIGURE_DEPENDS "src/test/*.c")
-file(GLOB headers "src/include/*.h" "src/include/*.hpp")
+file(GLOB headers "src/include/*.h")
 
 add_library(${PROJECT_NAME} SHARED ${files})
 add_executable(test ${tests})
