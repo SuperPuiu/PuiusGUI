@@ -42,6 +42,7 @@ struct Color3 {
 struct guiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
+  int BorderSize;
 
   struct Color3 BackgroundColor;
   struct Color3 TextColor;
@@ -59,6 +60,7 @@ struct guiProperties {
 
   void (*MouseDown)(int guiIndex);
   void (*MouseEnter)(int guiIndex);
+  void (*MouseLeave)(int guiIndex);
   void (*FocusLost)(int guiIndex);
 
   SDL_Rect rect;
