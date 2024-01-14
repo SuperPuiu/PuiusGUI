@@ -9,6 +9,9 @@ run:
 buildSO:
 	gcc -c -fPIC PuiusGUI.c -o bin/PuiusGUI.o
 	gcc bin/PuiusGUI.o -shared -o bin/libpuiusgui.so
+buildDLL:
+	gcc -c PuiusGUI.c
+	gcc -shared -o libpuiusgui.dll PuiusGUI.o
 install:
 	cp bin/libpuiusgui.so /usr/local/lib/libpuiusgui.so
 	cp include/PuiusGUI.h /usr/local/include/puiusgui/PuiusGUI.h
