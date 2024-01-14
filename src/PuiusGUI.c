@@ -18,12 +18,12 @@ TTF_Font *Arial;
 int MouseY, MouseX;
 int leftButtonDown = 0;
 
+// Textbox values
 int isFocused = 0;
+int cursor = 0;
 int currentGUI_Focused = -1;
 
-void defaultCallback(int a) {
-
-}
+void defaultCallback(int a) {}
 
 struct Color3 initColor3(int R, int G, int B) {
     struct Color3 Color;
@@ -33,6 +33,14 @@ struct Color3 initColor3(int R, int G, int B) {
     Color.G = G;
 
     return Color;
+}
+
+SDL_Point initPoint(int x, int y) {
+    SDL_Point point;
+    point.x = x;
+    point.y = y;
+
+    return point;
 }
 
 int CollosionRectPoint(struct guiProperties rect, int pointX, int pointY) {
@@ -62,6 +70,30 @@ void DrawRectangleRec(struct guiProperties rectangle) {
     }
 }
 
+void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color) {
+    if (globalRenderer) {
+        SDL_Color oldColor = {0, 0, 0};
+        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, NULL);
+
+        SDL_SetRenderDrawColor(globalRenderer, Color.R, Color.G, Color.B, 255);
+        SDL_RenderDrawLine(globalRenderer, StartX, StartY, EndX, EndY);
+        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, 255);
+    } else {
+        printf("[PUIUS GUI] Tried drawing a line without initializing globalRenderer.\n (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)");
+    }
+}
+
+void DrawText(struct guiProperties gui) {
+    if (globalRenderer) {
+        SDL_Color oldColor = {0, 0, 0};
+        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, NULL);
+
+        SDL_SetRenderDrawColor(globalRenderer, gui.TextColor.R, gui.TextColor.G, gui.TextColor.B, 255);
+        SDL_RenderCopy(globalRenderer, gui.TextureText, NULL, &gui.rect);
+        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, 255);
+    }
+}
+
 void DrawTextureEx(struct guiProperties rectangle) {
     if (globalRenderer) {
         SDL_Color oldColor = {0, 0, 0};
@@ -84,6 +116,10 @@ void DrawTextureEx(struct guiProperties rectangle) {
 }
 
 void writeToTextBox(char *str) {
+    if(isFocused == 0) {
+        return;
+    }
+
     size_t textLength = strlen(guiArray[currentGUI_Focused].Text);
     char *alloc = malloc(textLength + 1 + 1);
 
@@ -95,13 +131,20 @@ void writeToTextBox(char *str) {
 
     if (strcmp(str, "ENTER") == 0) {
         alloc[textLength] = '\n';
-        alloc[textLength + 1] = '\0';
+        alloc[textLength + (cursor)] = '\0';
+
+        cursor = strlen(alloc);
     }
     else if(strcmp(str, "BACKSPACE") == 0) {
-        alloc[textLength - 1] = 0;
+        for (int i = (cursor - 1); alloc[i] != '\0'; i++) {
+            alloc[i] = alloc[i + 1];
+        }
+
+        cursor = strlen(alloc);
     }
     else {
         strcat(alloc, str);
+        cursor = strlen(alloc);
     }
 
     guiArray[currentGUI_Focused].Text = alloc;
@@ -117,119 +160,125 @@ void processInput(struct inputStruct *input) {
                 input->SDL_QUIT = 1;
                 break;
             case SDL_KEYDOWN:
+                // printf("%s\n", SDL_GetKeyName(event.key.keysym.sym));
+
                 if(event.key.keysym.sym == SDLK_a)
                     input->A = 1;
-                else if(event.key.keysym.sym == SDLK_b)
+                if(event.key.keysym.sym == SDLK_b)
                     input->B = 1;
-                else if(event.key.keysym.sym == SDLK_c)
+                if(event.key.keysym.sym == SDLK_c)
                     input->C = 1;
-                else if(event.key.keysym.sym == SDLK_d)
+                if(event.key.keysym.sym == SDLK_d)
                     input->D = 1;
-                else if(event.key.keysym.sym == SDLK_e)
+                if(event.key.keysym.sym == SDLK_e)
                     input->E = 1;
-                else if(event.key.keysym.sym == SDLK_f)
+                if(event.key.keysym.sym == SDLK_f)
                     input->F = 1;
-                else if(event.key.keysym.sym == SDLK_g)
+                if(event.key.keysym.sym == SDLK_g)
                     input->G = 1;
-                else if(event.key.keysym.sym == SDLK_h)
+                if(event.key.keysym.sym == SDLK_h)
                     input->H = 1;
-                else if(event.key.keysym.sym == SDLK_i)
+                if(event.key.keysym.sym == SDLK_i)
                     input->I = 1;
-                else if(event.key.keysym.sym == SDLK_j)
+                if(event.key.keysym.sym == SDLK_j)
                     input->J = 1;
-                else if(event.key.keysym.sym == SDLK_k)
+                if(event.key.keysym.sym == SDLK_k)
                     input->K = 1;
-                else if(event.key.keysym.sym == SDLK_l)
+                if(event.key.keysym.sym == SDLK_l)
                     input->L = 1;
-                else if(event.key.keysym.sym == SDLK_m)
+                if(event.key.keysym.sym == SDLK_m)
                     input->M = 1;
-                else if(event.key.keysym.sym == SDLK_n)
+                if(event.key.keysym.sym == SDLK_n)
                     input->N = 1;
-                else if(event.key.keysym.sym == SDLK_o)
+                if(event.key.keysym.sym == SDLK_o)
                     input->O = 1;
-                else if(event.key.keysym.sym == SDLK_p)
+                if(event.key.keysym.sym == SDLK_p)
                     input->P = 1;
-                else if(event.key.keysym.sym == SDLK_q)
+                if(event.key.keysym.sym == SDLK_q)
                     input->Q = 1;
-                else if(event.key.keysym.sym == SDLK_r)
+                if(event.key.keysym.sym == SDLK_r)
                     input->R = 1;
-                else if(event.key.keysym.sym == SDLK_s)
+                if(event.key.keysym.sym == SDLK_s)
                     input->S = 1;
-                else if(event.key.keysym.sym == SDLK_t)
+                if(event.key.keysym.sym == SDLK_t)
                     input->T = 1;
-                else if(event.key.keysym.sym == SDLK_u)
+                if(event.key.keysym.sym == SDLK_u)
                     input->U = 1;
-                else if(event.key.keysym.sym == SDLK_v)
+                if(event.key.keysym.sym == SDLK_v)
                     input->V = 1;
-                else if(event.key.keysym.sym == SDLK_w)
+                if(event.key.keysym.sym == SDLK_w)
                     input->W = 1;
-                else if(event.key.keysym.sym == SDLK_w)
+                if(event.key.keysym.sym == SDLK_w)
                     input->X = 1;
-                else if(event.key.keysym.sym == SDLK_x)
+                if(event.key.keysym.sym == SDLK_x)
                     input->Y = 1;
-                else if(event.key.keysym.sym == SDLK_y)
+                if(event.key.keysym.sym == SDLK_y)
                     input->Z = 1;
-                else if(event.key.keysym.sym == SDLK_ESCAPE)
-                    input->ESC = 1;
-                else if(event.key.keysym.sym == SDLK_RETURN)
+                if(event.key.keysym.sym == SDLK_RETURN)
                     writeToTextBox("ENTER");
-                else if(event.key.keysym.sym == SDLK_BACKSPACE)
+                if(event.key.keysym.sym == SDLK_BACKSPACE)
                     writeToTextBox("BACKSPACE");
+                if (event.key.keysym.sym == SDLK_LEFT && isFocused && cursor > 0)
+                    cursor -= 1;
+                if (event.key.keysym.sym == SDLK_RIGHT && isFocused && cursor < strlen(guiArray[currentGUI_Focused].Text))
+                    cursor += 1;
+                if(event.key.keysym.sym == SDLK_ESCAPE)
+                    input->ESC = 1;
                 break;
             case SDL_KEYUP:
                 if(event.key.keysym.sym == SDLK_a)
                    input->A = 0;
-                else if(event.key.keysym.sym == SDLK_b)
+                if(event.key.keysym.sym == SDLK_b)
                    input->B = 0;
-                else if(event.key.keysym.sym == SDLK_c)
+                if(event.key.keysym.sym == SDLK_c)
                    input->C = 0;
-                else if(event.key.keysym.sym == SDLK_d)
+                if(event.key.keysym.sym == SDLK_d)
                    input->D = 0;
-                else if(event.key.keysym.sym == SDLK_e)
+                if(event.key.keysym.sym == SDLK_e)
                    input->E = 0;
-                else if(event.key.keysym.sym == SDLK_f)
+                if(event.key.keysym.sym == SDLK_f)
                    input->F = 0;
-                else if(event.key.keysym.sym == SDLK_g)
+                if(event.key.keysym.sym == SDLK_g)
                    input->G = 0;
-                else if(event.key.keysym.sym == SDLK_h)
+                if(event.key.keysym.sym == SDLK_h)
                    input->H = 0;
-                else if(event.key.keysym.sym == SDLK_i)
+                if(event.key.keysym.sym == SDLK_i)
                    input->I = 0;
-                else if(event.key.keysym.sym == SDLK_j)
+                if(event.key.keysym.sym == SDLK_j)
                    input->J = 0;
-                else if(event.key.keysym.sym == SDLK_k)
+                if(event.key.keysym.sym == SDLK_k)
                    input->K = 0;
-                else if(event.key.keysym.sym == SDLK_l)
+                if(event.key.keysym.sym == SDLK_l)
                    input->L = 0;
-                else if(event.key.keysym.sym == SDLK_m)
+                if(event.key.keysym.sym == SDLK_m)
                    input->M = 0;
-                else if(event.key.keysym.sym == SDLK_n)
+                if(event.key.keysym.sym == SDLK_n)
                    input->N = 0;
-                else if(event.key.keysym.sym == SDLK_o)
+                if(event.key.keysym.sym == SDLK_o)
                    input->O = 0;
-                else if(event.key.keysym.sym == SDLK_p)
+                if(event.key.keysym.sym == SDLK_p)
                    input->P = 0;
-                else if(event.key.keysym.sym == SDLK_q)
+                if(event.key.keysym.sym == SDLK_q)
                    input->Q = 0;
-                else if(event.key.keysym.sym == SDLK_r)
+                if(event.key.keysym.sym == SDLK_r)
                    input->R = 0;
-                else if(event.key.keysym.sym == SDLK_s)
+                if(event.key.keysym.sym == SDLK_s)
                    input->S = 0;
-                else if(event.key.keysym.sym == SDLK_t)
+                if(event.key.keysym.sym == SDLK_t)
                    input->T = 0;
-                else if(event.key.keysym.sym == SDLK_u)
+                if(event.key.keysym.sym == SDLK_u)
                    input->U = 0;
-                else if(event.key.keysym.sym == SDLK_v)
+                if(event.key.keysym.sym == SDLK_v)
                    input->V = 0;
-                else if(event.key.keysym.sym == SDLK_w)
+                if(event.key.keysym.sym == SDLK_w)
                    input->W = 0;
-                else if(event.key.keysym.sym == SDLK_x)
+                if(event.key.keysym.sym == SDLK_x)
                    input->X = 0;
-                else if(event.key.keysym.sym == SDLK_y)
+                if(event.key.keysym.sym == SDLK_y)
                    input->Y = 0;
-                else if(event.key.keysym.sym == SDLK_z)
+                if(event.key.keysym.sym == SDLK_z)
                    input->Z = 0;
-                else if(event.key.keysym.sym == SDLK_ESCAPE)
+                if(event.key.keysym.sym == SDLK_ESCAPE)
                    input->ESC = 0;
                 break;
             case SDL_MOUSEMOTION:
@@ -243,6 +292,9 @@ void processInput(struct inputStruct *input) {
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (event.button.button == SDL_BUTTON_LEFT) {
+                    if (isFocused)
+                        isFocused = 0;
+
                     leftButtonDown = 1;
                     input->LEFT_BUTTON = 1;
                 }
@@ -288,13 +340,18 @@ void handleGUI(int currentGUI) {
         guiArray[currentGUI].Hovered = 1;
 
         if (leftButtonDown) {
+            // callback
             if (guiArray[currentGUI].Pressed == 0)
                 guiArray[currentGUI].MouseDown(currentGUI);
 
+            // property change
             guiArray[currentGUI].Pressed = 1;
-            if (isFocused) {
+            cursor = strlen(guiArray[currentGUI].Text);
+
+            // other
+            if (isFocused && guiArray[currentGUI].Type == TEXTBOX) {
                 currentGUI_Focused = currentGUI;
-            } else {
+            } else if (!isFocused) {
                 SDL_StartTextInput();
 
                 currentGUI_Focused = currentGUI;
@@ -338,6 +395,8 @@ int ConstructGUI(enum GUI_TYPE GUI) {
         newGUI.SizeX = 70;
         newGUI.SizeY = 25;
 
+        newGUI.BorderSize = 1;
+
         newGUI.TextColor = TextColor;
         newGUI.BackgroundColor = BackgroundColor;
 
@@ -345,6 +404,7 @@ int ConstructGUI(enum GUI_TYPE GUI) {
         newGUI.MouseEnter = defaultCallback;
         newGUI.MouseDown = defaultCallback;
         newGUI.FocusLost = defaultCallback;
+        newGUI.MouseLeave = defaultCallback;
 
         SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Arial, "Text", BLACK);
         SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
@@ -386,19 +446,31 @@ void renderGUI() {
         if (i > lastGUI_item)
             break;
 
-        int textWidth = 0;
-        int textHeight = 0;
-
-        TTF_SizeUTF8(Arial, guiArray[i].Text, &textWidth, &textHeight);
-
         handleGUI(i);
+        struct Color3 color = initColor3(0, 0, 0);
+
+        // SDL_RenderDrawLine(globalRenderer, guiArray[i].PositionX, guiArray[i].PositionY, guiArray[i].SizeX, guiArray[i].PositionY);
+        // (x, y) - topleft
+        // (x + sx, y) - topright
+        // (x, y + sy) - bottomleft
+        // (x + sx, y + sy) - bottomright
+
+        SDL_Point topLeft = initPoint(guiArray[i].PositionX, guiArray[i].PositionY);
+        SDL_Point topRight = initPoint(guiArray[i].PositionX + guiArray[i].SizeX, guiArray[i].PositionY);
+        SDL_Point bottomLeft = initPoint(guiArray[i].PositionX, guiArray[i].PositionY + guiArray[i].SizeY);
+        SDL_Point bottomRight = initPoint(guiArray[i].PositionX + guiArray[i].SizeX, guiArray[i].PositionY + guiArray[i].SizeY);
 
         if(guiArray[i].Type != IMAGELABEL && guiArray[i].Type != IMAGEBUTTON) {
             DrawRectangleRec(guiArray[i]);
-            SDL_RenderCopy(globalRenderer, guiArray[i].TextureText, NULL, &guiArray[i].rect);
+            DrawText(guiArray[i]);
         }
         else
             DrawTextureEx(guiArray[i]);
+
+        DrawLine(topLeft.x, topLeft.y, topRight.x, topRight.y, color);
+        DrawLine(topLeft.x, topLeft.y, bottomLeft.x, bottomLeft.y, color);
+        DrawLine(bottomRight.x, bottomRight.y, bottomLeft.x, bottomRight.y, color);
+        DrawLine(bottomRight.x, bottomRight.y, topRight.x, topRight.y,color);
     }
 }
 
