@@ -13,7 +13,7 @@ SDL_Window *globalWindow;
 struct guiProperties guiArray[100];
 int lastGUI_item = -1;
 
-TTF_Font *Arial;
+TTF_Font *Font;
 
 int MouseY, MouseX;
 int leftButtonDown = 0;
@@ -180,6 +180,8 @@ void writeToTextBox(char *str) {
 
         alloc[textLength] = str[0];
         alloc[textLength + 1] = '\0';
+
+        cursor = textLength + 1;
     }
 
     guiArray[currentGUI_Focused].Text = alloc;
@@ -345,7 +347,15 @@ void processInput(struct inputStruct *input) {
 void updateGUI(int GUI_Index) {
     SDL_Color Color = {guiArray[GUI_Index].TextColor.R, guiArray[GUI_Index].TextColor.G, guiArray[GUI_Index].TextColor.B};
 
-    SDL_Surface *surfaceMessage = TTF_RenderText_Blended_Wrapped(Arial, guiArray[GUI_Index].Text, Color, 0);
+    TTF_SetFontSize(guiArray[GUI_Index].Font, guiArray[GUI_Index].TextSize);
+    TTF_SetFontOutline(guiArray[GUI_Index].Font, guiArray[GUI_Index].OutlineSize);
+    SDL_Surface *surfaceMessage;
+
+    if (guiArray[GUI_Index].TextWrapped)
+        surfaceMessage = TTF_RenderText_Blended_Wrapped(guiArray[GUI_Index].Font, guiArray[GUI_Index].Text, Color, guiArray[GUI_Index].SizeX);
+    else
+        surfaceMessage = TTF_RenderText_Blended_Wrapped(guiArray[GUI_Index].Font, guiArray[GUI_Index].Text, Color, 0);
+
     SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
 
     SDL_GetClipRect(surfaceMessage, &guiArray[GUI_Index].TextRectangle);
@@ -369,6 +379,16 @@ void updateGUI(int GUI_Index) {
     } else if (guiArray[GUI_Index].TextYAlignment == BOTTOM) {
         guiArray[GUI_Index].TextRectangle.y = (guiArray[GUI_Index].PositionY + guiArray[GUI_Index].SizeY) - guiArray[GUI_Index].TextRectangle.h;
     }
+
+    if (guiArray[GUI_Index].TextRectangle.w > guiArray[GUI_Index].SizeX)
+        guiArray[GUI_Index].TextFits = 0;
+    else
+        guiArray[GUI_Index].TextFits = 1;
+
+    if (guiArray[GUI_Index].TextRectangle.h > guiArray[GUI_Index].SizeY)
+        guiArray[GUI_Index].TextFits = 0;
+    else
+        guiArray[GUI_Index].TextFits = 1;
 
     guiArray[GUI_Index].TextureText = Message;
     SDL_FreeSurface(surfaceMessage);
@@ -428,6 +448,7 @@ int ConstructGUI(enum GUI_TYPE GUI) {
 
         struct Color3 TextColor = initColor3(0, 0, 0, 255);
         struct Color3 BackgroundColor = initColor3(255, 255, 255, 255);
+        struct Color3 BorderColor = initColor3(0, 0, 0, 255);
 
         struct guiProperties newGUI;
         lastGUI_item += 1;
@@ -442,11 +463,17 @@ int ConstructGUI(enum GUI_TYPE GUI) {
         newGUI.SizeY = 25;
 
         newGUI.Visible = 1;
-
         newGUI.BorderSize = 1;
+        newGUI.OutlineSize = 0;
+
+        newGUI.TextSize = 16;
+        newGUI.TextWrapped = 0;
+        newGUI.TextFits = 1;
+        newGUI.TextScaled = 0;
 
         newGUI.TextColor = TextColor;
         newGUI.BackgroundColor = BackgroundColor;
+        newGUI.BorderColor = BorderColor;
 
         /* Ensure that no pointer is left which could trigger an error */
         newGUI.MouseEnter = defaultCallbackHover;
@@ -454,7 +481,7 @@ int ConstructGUI(enum GUI_TYPE GUI) {
         newGUI.FocusLost = defaultCallback;
         newGUI.MouseLeave = defaultCallbackHoverLeave;
 
-        SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Arial, "Text", BLACK);
+        SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Font, "Text", BLACK);
         SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
 
         newGUI.TextRectangle.x = 0;
@@ -475,6 +502,7 @@ int ConstructGUI(enum GUI_TYPE GUI) {
 
         strcpy(newGUI.Text, "Text");
         newGUI.TextureText = Message;
+        newGUI.Font = Font;
 
         if (GUI == TEXTLABEL) {
             newGUI.TextEditable = 0;
@@ -504,17 +532,12 @@ void renderGUI() {
             continue;
 
         handleGUI(i);
-        struct Color3 color = initColor3(0, 0, 0, 255);
+        struct Color3 color = initColor3(guiArray[i].BorderColor.R, guiArray[i].BorderColor.G, guiArray[i].BorderColor.B, guiArray[i].BorderColor.A);
 
         // (x, y) - topleft
         // (x + sx, y) - topright
         // (x, y + sy) - bottomleft
         // (x + sx, y + sy) - bottomright
-
-        SDL_Point topLeft = initPoint(guiArray[i].PositionX, guiArray[i].PositionY);
-        SDL_Point topRight = initPoint(guiArray[i].PositionX + guiArray[i].SizeX, guiArray[i].PositionY);
-        SDL_Point bottomLeft = initPoint(guiArray[i].PositionX, guiArray[i].PositionY + guiArray[i].SizeY);
-        SDL_Point bottomRight = initPoint(guiArray[i].PositionX + guiArray[i].SizeX, guiArray[i].PositionY + guiArray[i].SizeY);
 
         if(guiArray[i].Type != IMAGELABEL && guiArray[i].Type != IMAGEBUTTON) {
             DrawRectangleRec(guiArray[i]);
@@ -523,10 +546,17 @@ void renderGUI() {
         else
             DrawTextureEx(guiArray[i]);
 
-        DrawLine(topLeft.x, topLeft.y, topRight.x, topRight.y, color);
-        DrawLine(topLeft.x, topLeft.y, bottomLeft.x, bottomLeft.y, color);
-        DrawLine(bottomRight.x, bottomRight.y, bottomLeft.x, bottomRight.y, color);
-        DrawLine(bottomRight.x, bottomRight.y, topRight.x, topRight.y,color);
+        for (int borderNum = 0; borderNum < guiArray[i].BorderSize; borderNum++) {
+            SDL_Point topLeft = initPoint(guiArray[i].PositionX, guiArray[i].PositionY);
+            SDL_Point topRight = initPoint(guiArray[i].PositionX + guiArray[i].SizeX, guiArray[i].PositionY);
+            SDL_Point bottomLeft = initPoint(guiArray[i].PositionX, guiArray[i].PositionY + guiArray[i].SizeY);
+            SDL_Point bottomRight = initPoint(guiArray[i].PositionX + guiArray[i].SizeX, guiArray[i].PositionY + guiArray[i].SizeY);
+
+            DrawLine(topLeft.x, topLeft.y + borderNum, topRight.x, topRight.y + borderNum, color); /* Top line */
+            DrawLine(topLeft.x + borderNum, topLeft.y, bottomLeft.x + borderNum, bottomLeft.y, color); /* Left line */
+            DrawLine(bottomRight.x, bottomRight.y - borderNum, bottomLeft.x, bottomRight.y - borderNum, color); /* Bottom line */
+            DrawLine(bottomRight.x - borderNum, bottomRight.y, topRight.x - borderNum, topRight.y,color); /* Right line */
+        }
     }
 }
 
@@ -534,8 +564,16 @@ int initLayer(SDL_Renderer *renderer, SDL_Window *window) {
     globalRenderer = renderer;
     globalWindow = window;
 
-    Arial = TTF_OpenFont("arial.ttf", 16);
+    Font = TTF_OpenFont("arial.ttf", 16);
 
+    return 1;
+}
+
+int changeDefaultFont(char *fontName, int fontSize) {
+    Font = TTF_OpenFont(fontName, fontSize);
+
+    if (!Font)
+        return 0;
     return 1;
 }
 
