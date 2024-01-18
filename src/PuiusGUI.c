@@ -180,6 +180,8 @@ void writeToTextBox(char *str) {
 
         alloc[textLength] = str[0];
         alloc[textLength + 1] = '\0';
+
+        cursor = textLength + 1;
     }
 
     guiArray[currentGUI_Focused].Text = alloc;
