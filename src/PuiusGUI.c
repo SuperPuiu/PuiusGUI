@@ -23,14 +23,26 @@ int isFocused = 0;
 int cursor = 0;
 int currentGUI_Focused = -1;
 
-void defaultCallback(int a) {}
+void defaultCallback(int a) {} // Used for ConstructGUI()
+void defaultCallbackHover(int index) { // Used for ConstructGUI()
+    guiArray[index].BackgroundColor.R += 10;
+    guiArray[index].BackgroundColor.G += 10;
+    guiArray[index].BackgroundColor.B += 10;
+}
 
-struct Color3 initColor3(int R, int G, int B) {
+void defaultCallbackHoverLeave(int index) {
+    guiArray[index].BackgroundColor.R -= 10;
+    guiArray[index].BackgroundColor.G -= 10;
+    guiArray[index].BackgroundColor.B -= 10;
+}
+
+struct Color3 initColor3(int R, int G, int B, int A) {
     struct Color3 Color;
 
     Color.R = R;
     Color.B = B;
     Color.G = G;
+    Color.A = A;
 
     return Color;
 }
@@ -50,9 +62,10 @@ int CollosionRectPoint(struct guiProperties rect, int pointX, int pointY) {
 }
 
 void DrawRectangleRec(struct guiProperties rectangle) {
+    /* Set the color to the specified color, draw the rectangle, reset the color. */
     if (globalRenderer) {
-        SDL_Color oldColor = {0, 0, 0};
-        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, NULL);
+        SDL_Color oldColor = {0, 0, 0, 0};
+        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
         SDL_Rect newRect = {
             rectangle.PositionX,
@@ -61,9 +74,9 @@ void DrawRectangleRec(struct guiProperties rectangle) {
             rectangle.SizeY
         };
 
-        SDL_SetRenderDrawColor(globalRenderer, rectangle.BackgroundColor.R, rectangle.BackgroundColor.G, rectangle.BackgroundColor.B, 255);
+        SDL_SetRenderDrawColor(globalRenderer, rectangle.BackgroundColor.R, rectangle.BackgroundColor.G, rectangle.BackgroundColor.B, rectangle.BackgroundColor.A);
         SDL_RenderFillRect(globalRenderer, &newRect);
-        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, 255);
+        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
 
      } else {
          printf("[PUIUS GUI] Tried drawing a rectangle without initializing globalRenderer.\n (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)");
@@ -71,13 +84,14 @@ void DrawRectangleRec(struct guiProperties rectangle) {
 }
 
 void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color) {
+    /* Set the color to the specified color, draw the line, reset the color. */
     if (globalRenderer) {
-        SDL_Color oldColor = {0, 0, 0};
-        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, NULL);
+        SDL_Color oldColor = {0, 0, 0, 0};
+        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
         SDL_SetRenderDrawColor(globalRenderer, Color.R, Color.G, Color.B, 255);
         SDL_RenderDrawLine(globalRenderer, StartX, StartY, EndX, EndY);
-        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, 255);
+        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
     } else {
         printf("[PUIUS GUI] Tried drawing a line without initializing globalRenderer.\n (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)");
     }
@@ -85,19 +99,19 @@ void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color) {
 
 void DrawText(struct guiProperties gui) {
     if (globalRenderer) {
-        SDL_Color oldColor = {0, 0, 0};
-        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, NULL);
+        SDL_Color oldColor = {0, 0, 0, 0};
+        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
-        SDL_SetRenderDrawColor(globalRenderer, gui.TextColor.R, gui.TextColor.G, gui.TextColor.B, 255);
-        SDL_RenderCopy(globalRenderer, gui.TextureText, NULL, &gui.rect);
-        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, 255);
+        SDL_SetRenderDrawColor(globalRenderer, gui.TextColor.R, gui.TextColor.G, gui.TextColor.B, gui.TextColor.A);
+        SDL_RenderCopy(globalRenderer, gui.TextureText, NULL, &gui.TextRectangle);
+        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
     }
 }
 
 void DrawTextureEx(struct guiProperties rectangle) {
     if (globalRenderer) {
-        SDL_Color oldColor = {0, 0, 0};
-        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, NULL);
+        SDL_Color oldColor = {0, 0, 0, 0};
+        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
         SDL_Rect newRect = {
             rectangle.PositionX,
@@ -106,9 +120,9 @@ void DrawTextureEx(struct guiProperties rectangle) {
             rectangle.SizeY
         };
 
-        SDL_SetRenderDrawColor(globalRenderer, rectangle.BackgroundColor.R, rectangle.BackgroundColor.G, rectangle.BackgroundColor.B, 255);
+        SDL_SetRenderDrawColor(globalRenderer, rectangle.BackgroundColor.R, rectangle.BackgroundColor.G, rectangle.BackgroundColor.B, rectangle.BackgroundColor.A);
         SDL_RenderCopyEx(globalRenderer, rectangle.Image, NULL, &newRect, 0, NULL, SDL_FLIP_NONE);
-        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, 255);
+        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
 
      } else {
          printf("[PUIUS GUI] Tried drawing a texture without initializing globalRenderer.\n (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)");
@@ -119,6 +133,8 @@ void writeToTextBox(char *str) {
     if(isFocused == 0) {
         return;
     }
+
+    printf("%i\n", cursor);
 
     size_t textLength = strlen(guiArray[currentGUI_Focused].Text);
     char *alloc = malloc(textLength + 1 + 1);
@@ -133,18 +149,37 @@ void writeToTextBox(char *str) {
         alloc[textLength] = '\n';
         alloc[textLength + (cursor)] = '\0';
 
-        cursor = strlen(alloc);
+        if (cursor < strlen(alloc))
+            cursor += 1;
     }
     else if(strcmp(str, "BACKSPACE") == 0) {
         for (int i = (cursor - 1); alloc[i] != '\0'; i++) {
             alloc[i] = alloc[i + 1];
         }
 
-        cursor = strlen(alloc);
+        if (cursor > 0)
+            cursor -= 1;
     }
     else {
-        strcat(alloc, str);
-        cursor = strlen(alloc);
+        /* TODO: int flag = 0;
+
+        for (int i = cursor; i < strlen(alloc); i++) {
+            if (flag != 1)
+                alloc[i] = guiArray[currentGUI_Focused].Text[i];
+            else
+                alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+
+            if (i == cursor)
+                flag = 1;
+        }
+
+        alloc[cursor] = str[0];
+
+        if (cursor < strlen(alloc))
+            cursor += 1; */
+
+        alloc[textLength] = str[0];
+        alloc[textLength + 1] = '\0';
     }
 
     guiArray[currentGUI_Focused].Text = alloc;
@@ -292,8 +327,10 @@ void processInput(struct inputStruct *input) {
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (event.button.button == SDL_BUTTON_LEFT) {
-                    if (isFocused)
+                    if (isFocused) {
                         isFocused = 0;
+                        guiArray[currentGUI_Focused].FocusLost(currentGUI_Focused);
+                    }
 
                     leftButtonDown = 1;
                     input->LEFT_BUTTON = 1;
@@ -301,8 +338,6 @@ void processInput(struct inputStruct *input) {
                 break;
             case SDL_TEXTINPUT:
                 writeToTextBox(event.text.text);
-            case SDL_TEXTEDITING:
-
         }
     }
 }
@@ -313,9 +348,27 @@ void updateGUI(int GUI_Index) {
     SDL_Surface *surfaceMessage = TTF_RenderText_Blended_Wrapped(Arial, guiArray[GUI_Index].Text, Color, 0);
     SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
 
-    SDL_GetClipRect(surfaceMessage, &guiArray[GUI_Index].rect);
-    guiArray[GUI_Index].rect.x = guiArray[GUI_Index].PositionX;
-    guiArray[GUI_Index].rect.y = guiArray[GUI_Index].PositionY;
+    SDL_GetClipRect(surfaceMessage, &guiArray[GUI_Index].TextRectangle);
+    // guiArray[GUI_Index].TextRectangle.x = guiArray[GUI_Index].PositionX;
+    // guiArray[GUI_Index].TextRectangle.y = guiArray[GUI_Index].PositionY;
+
+    /* Calculate the position based on gui's enums */
+
+    if (guiArray[GUI_Index].TextXAlignment == LEFT) {
+        guiArray[GUI_Index].TextRectangle.x = guiArray[GUI_Index].PositionX;
+    } else if (guiArray[GUI_Index].TextXAlignment == RIGHT) {
+        guiArray[GUI_Index].TextRectangle.x = (guiArray[GUI_Index].PositionX + guiArray[GUI_Index].SizeX) - guiArray[GUI_Index].TextRectangle.w;
+    } else if (guiArray[GUI_Index].TextXAlignment == X_CENTER) {
+        guiArray[GUI_Index].TextRectangle.x = (guiArray[GUI_Index].SizeX / 2 + guiArray[GUI_Index].PositionX) - guiArray[GUI_Index].TextRectangle.w / 2;
+    }
+
+    if (guiArray[GUI_Index].TextYAlignment == TOP) {
+        guiArray[GUI_Index].TextRectangle.y = guiArray[GUI_Index].PositionY;
+    } else if (guiArray[GUI_Index].TextYAlignment == Y_CENTER) {
+        guiArray[GUI_Index].TextRectangle.y = (guiArray[GUI_Index].SizeY / 2 + guiArray[GUI_Index].PositionY) - guiArray[GUI_Index].TextRectangle.h / 2;
+    } else if (guiArray[GUI_Index].TextYAlignment == BOTTOM) {
+        guiArray[GUI_Index].TextRectangle.y = (guiArray[GUI_Index].PositionY + guiArray[GUI_Index].SizeY) - guiArray[GUI_Index].TextRectangle.h;
+    }
 
     guiArray[GUI_Index].TextureText = Message;
     SDL_FreeSurface(surfaceMessage);
@@ -331,24 +384,20 @@ void handleGUI(int currentGUI) {
     int isColliding = CollosionRectPoint(guiArray[currentGUI], MouseX, MouseY);
 
     if ((isColliding && guiArray[currentGUI].Type == TEXTBUTTON) || (isColliding && guiArray[currentGUI].Type == IMAGEBUTTON) || (isColliding && guiArray[currentGUI].Type == TEXTBOX)) {
-        if (guiArray[currentGUI].Hovered == 0) {
-            guiArray[currentGUI].BackgroundColor.R -= 50;
-            guiArray[currentGUI].BackgroundColor.G -= 50;
-            guiArray[currentGUI].BackgroundColor.B -= 50;
-        }
+        if (guiArray[currentGUI].Hovered == 0)
+            guiArray[currentGUI].MouseLeave(currentGUI);
 
         guiArray[currentGUI].Hovered = 1;
 
         if (leftButtonDown) {
-            // callback
+            /* Trigger MouseDown callback */
             if (guiArray[currentGUI].Pressed == 0)
                 guiArray[currentGUI].MouseDown(currentGUI);
 
-            // property change
+            /* Change Property */
             guiArray[currentGUI].Pressed = 1;
             cursor = strlen(guiArray[currentGUI].Text);
 
-            // other
             if (isFocused && guiArray[currentGUI].Type == TEXTBOX) {
                 currentGUI_Focused = currentGUI;
             } else if (!isFocused) {
@@ -365,11 +414,8 @@ void handleGUI(int currentGUI) {
         }
     }
     else if ((!isColliding && guiArray[currentGUI].Type == TEXTBUTTON) || (!isColliding && guiArray[currentGUI].Type == IMAGEBUTTON) || (!isColliding && guiArray[currentGUI].Type == TEXTBOX)) {
-        if (guiArray[currentGUI].Hovered == 1) {
-            guiArray[currentGUI].BackgroundColor.R += 50;
-            guiArray[currentGUI].BackgroundColor.G += 50;
-            guiArray[currentGUI].BackgroundColor.B += 50;
-        }
+        if (guiArray[currentGUI].Hovered == 1)
+            guiArray[currentGUI].MouseEnter(currentGUI);
 
         guiArray[currentGUI].Hovered = 0;
         guiArray[currentGUI].Pressed = 0;
@@ -380,8 +426,8 @@ int ConstructGUI(enum GUI_TYPE GUI) {
     if (lastGUI_item < 100) {
         SDL_Color BLACK = {0, 0, 0};
 
-        struct Color3 TextColor = initColor3(0, 0, 0);
-        struct Color3 BackgroundColor = initColor3(255, 255, 255);
+        struct Color3 TextColor = initColor3(0, 0, 0, 255);
+        struct Color3 BackgroundColor = initColor3(255, 255, 255, 255);
 
         struct guiProperties newGUI;
         lastGUI_item += 1;
@@ -395,19 +441,28 @@ int ConstructGUI(enum GUI_TYPE GUI) {
         newGUI.SizeX = 70;
         newGUI.SizeY = 25;
 
+        newGUI.Visible = 1;
+
         newGUI.BorderSize = 1;
 
         newGUI.TextColor = TextColor;
         newGUI.BackgroundColor = BackgroundColor;
 
-        // Ensure that no pointer is left which could trigger an error
-        newGUI.MouseEnter = defaultCallback;
+        /* Ensure that no pointer is left which could trigger an error */
+        newGUI.MouseEnter = defaultCallbackHover;
         newGUI.MouseDown = defaultCallback;
         newGUI.FocusLost = defaultCallback;
-        newGUI.MouseLeave = defaultCallback;
+        newGUI.MouseLeave = defaultCallbackHoverLeave;
 
         SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Arial, "Text", BLACK);
         SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
+
+        newGUI.TextRectangle.x = 0;
+        newGUI.TextRectangle.y = 0;
+
+        /* Place some default enums for TextXAlignment and TextYAlignment */
+        newGUI.TextXAlignment = LEFT;
+        newGUI.TextYAlignment = TOP;
 
         char *alloc = (char*)malloc(5 * sizeof(char));
 
@@ -445,11 +500,12 @@ void renderGUI() {
     for (int i = 0; i < 100; i++) {
         if (i > lastGUI_item)
             break;
+        if (guiArray[i].Visible == 0)
+            continue;
 
         handleGUI(i);
-        struct Color3 color = initColor3(0, 0, 0);
+        struct Color3 color = initColor3(0, 0, 0, 255);
 
-        // SDL_RenderDrawLine(globalRenderer, guiArray[i].PositionX, guiArray[i].PositionY, guiArray[i].SizeX, guiArray[i].PositionY);
         // (x, y) - topleft
         // (x + sx, y) - topright
         // (x, y + sy) - bottomleft
