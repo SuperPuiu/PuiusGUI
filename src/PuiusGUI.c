@@ -161,27 +161,19 @@ void writeToTextBox(char *str) {
             cursor -= 1;
     }
     else {
-        /* TODO: int flag = 0;
-
-        for (int i = cursor; i < strlen(alloc); i++) {
-            if (flag != 1)
-                alloc[i] = guiArray[currentGUI_Focused].Text[i];
-            else
+        for (int i = 0; i <= strlen(alloc); i++) {
+            if (i == cursor) {
+                alloc[i] = str[0];
                 alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+                continue;
+            } else if (i > cursor) {
+                alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+            } else {
+                alloc[i] = guiArray[currentGUI_Focused].Text[i];
+            }
+        };
 
-            if (i == cursor)
-                flag = 1;
-        }
-
-        alloc[cursor] = str[0];
-
-        if (cursor < strlen(alloc))
-            cursor += 1; */
-
-        alloc[textLength] = str[0];
-        alloc[textLength + 1] = '\0';
-
-        cursor = textLength + 1;
+        cursor = cursor + 1;
     }
 
     guiArray[currentGUI_Focused].Text = alloc;
