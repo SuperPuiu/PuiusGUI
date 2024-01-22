@@ -183,7 +183,7 @@ void writeToTextBox(char *str) {
                 alloc[i] = guiArray[currentGUI_Focused].Text[i];
             }
         };
-
+      
         cursor = cursor + 1;
     }
     free(guiArray[currentGUI_Focused].Text);
