@@ -133,19 +133,33 @@ void writeToTextBox(char *str) {
     if(isFocused == 0) {
         return;
     }
+    int allocated = 0;
+    // printf("%i\n", cursor);
 
-    printf("%i\n", cursor);
+    int textLength = strlen(guiArray[currentGUI_Focused].Text);
+    char *alloc;
 
-    size_t textLength = strlen(guiArray[currentGUI_Focused].Text);
-    char *alloc = malloc(textLength + 1 + 1);
+    /*if (guiArray[currentGUI_Focused].Text[textLength - 1] != 0) {
+        allocated = 1;
 
-    if (!alloc) {
+        printf("Allocating.. ");
+        alloc = malloc(textLength * 2);
+    }
+    else
+        alloc = guiArray[currentGUI_Focused].Text;*/
+
+    alloc = malloc(textLength * 2);
+
+    if (alloc == NULL) {
         printf("[PUIUS GUI] Failed to allocate memory for new string when writing to a textbox.");
         exit(1);
     }
-    strcpy(alloc, guiArray[currentGUI_Focused].Text);
+
+    printf("Copied! %i\n", cursor);
 
     if (strcmp(str, "ENTER") == 0) {
+        strcpy(alloc, guiArray[currentGUI_Focused].Text);
+
         alloc[textLength] = '\n';
         alloc[textLength + (cursor)] = '\0';
 
@@ -153,6 +167,7 @@ void writeToTextBox(char *str) {
             cursor += 1;
     }
     else if(strcmp(str, "BACKSPACE") == 0) {
+        strcpy(alloc, guiArray[currentGUI_Focused].Text);
         for (int i = (cursor - 1); alloc[i] != '\0'; i++) {
             alloc[i] = alloc[i + 1];
         }
@@ -175,6 +190,7 @@ void writeToTextBox(char *str) {
 
         cursor = cursor + 1;
     }
+    free(guiArray[currentGUI_Focused].Text);
 
     guiArray[currentGUI_Focused].Text = alloc;
     updateGUI(currentGUI_Focused);
