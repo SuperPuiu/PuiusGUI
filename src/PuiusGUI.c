@@ -133,20 +133,10 @@ void writeToTextBox(char *str) {
     if(isFocused == 0) {
         return;
     }
-    int allocated = 0;
     // printf("%i\n", cursor);
 
     int textLength = strlen(guiArray[currentGUI_Focused].Text);
     char *alloc;
-
-    /*if (guiArray[currentGUI_Focused].Text[textLength - 1] != 0) {
-        allocated = 1;
-
-        printf("Allocating.. ");
-        alloc = malloc(textLength * 2);
-    }
-    else
-        alloc = guiArray[currentGUI_Focused].Text;*/
 
     alloc = malloc(textLength * 2);
 
@@ -158,13 +148,19 @@ void writeToTextBox(char *str) {
     printf("Copied! %i\n", cursor);
 
     if (strcmp(str, "ENTER") == 0) {
-        strcpy(alloc, guiArray[currentGUI_Focused].Text);
+        for (int i = 0; i <= strlen(alloc); i++) {
+            if (i == cursor) {
+                alloc[i] = '\n';
+                alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+                continue;
+            } else if (i > cursor) {
+                alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+            } else {
+                alloc[i] = guiArray[currentGUI_Focused].Text[i];
+            }
+        };
 
-        alloc[textLength] = '\n';
-        alloc[textLength + (cursor)] = '\0';
-
-        if (cursor < strlen(alloc))
-            cursor += 1;
+        cursor = cursor + 1;
     }
     else if(strcmp(str, "BACKSPACE") == 0) {
         strcpy(alloc, guiArray[currentGUI_Focused].Text);
