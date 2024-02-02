@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "include/PuiusGUI.h"
 
@@ -12,16 +13,16 @@ SDL_Window *globalWindow;
 
 struct guiProperties guiArray[100];
 int inputs[258];
-int running = 1;
+int running = true;
 int lastGUI_item = -1;
 
 TTF_Font *Font;
 
 int MouseY, MouseX;
-int leftButtonDown = 0;
+int leftButtonDown = false;
 
 // Textbox values
-int isFocused = 0;
+int isFocused = false;
 int cursor = 0;
 int currentGUI_Focused = -1;
 
@@ -59,8 +60,8 @@ SDL_Point initPoint(int x, int y) {
 
 int CollosionRectPoint(struct guiProperties rect, int pointX, int pointY) {
     if (pointX > rect.PositionX && pointX < rect.PositionX + rect.SizeX && pointY > rect.PositionY && pointY < rect.PositionY + rect.SizeY)
-            return 1;
-        return 0;
+            return true;
+        return false;
 }
 
 void DrawRectangleRec(struct guiProperties rectangle) {
@@ -132,7 +133,7 @@ void DrawTextureEx(struct guiProperties rectangle) {
 }
 
 void writeToTextBox(char *str) {
-    if(isFocused == 0) {
+    if(isFocused == false) {
         return;
     }
     // printf("%i\n", cursor);
@@ -146,8 +147,6 @@ void writeToTextBox(char *str) {
         printf("[PUIUS GUI] Failed to allocate memory for new string when writing to a textbox.");
         exit(1);
     }
-
-    printf("Copied! %i\n", cursor);
 
     if (strcmp(str, "ENTER") == 0) {
         for (int i = 0; i <= strlen(alloc); i++) {
@@ -200,15 +199,17 @@ void processInput() {
     while(SDL_PollEvent(&event)) {
         switch(event.type) {
             case SDL_QUIT:
-                running = 0;
+                running = false;
                 break;
             case SDL_KEYDOWN:
-                printf("%i\n", event.key.keysym.scancode);
-
+                if (event.key.keysym.sym == SDLK_RETURN)
+                    writeToTextBox("ENTER");
+                else if (event.key.keysym.sym == SDLK_BACKSPACE)
+                    writeToTextBox("BACKSPACE");
                 inputs[event.key.keysym.scancode] = 1;
                 break;
             case SDL_KEYUP:
-                inputs[event.key.keysym.scancode] = 1;
+                inputs[event.key.keysym.scancode] = 0;
                 break;
             case SDL_MOUSEMOTION:
                 SDL_GetMouseState(&MouseX, &MouseY);
@@ -216,7 +217,7 @@ void processInput() {
             case SDL_MOUSEBUTTONUP:
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     inputs[257] = 0;
-                    leftButtonDown = 0;
+                    leftButtonDown = false;
                     // input->LEFT_BUTTON = 0;
                 }
                 break;
@@ -225,11 +226,11 @@ void processInput() {
                     inputs[257] = 1;
 
                     if (isFocused) {
-                        isFocused = 0;
+                        isFocused = false;
                         guiArray[currentGUI_Focused].FocusLost(currentGUI_Focused);
                     }
 
-                    leftButtonDown = 1;
+                    leftButtonDown = true;
                 }
                 break;
             case SDL_TEXTINPUT:
@@ -298,18 +299,18 @@ void handleGUI(int currentGUI) {
     int isColliding = CollosionRectPoint(guiArray[currentGUI], MouseX, MouseY);
 
     if ((isColliding && guiArray[currentGUI].Type == TEXTBUTTON) || (isColliding && guiArray[currentGUI].Type == IMAGEBUTTON) || (isColliding && guiArray[currentGUI].Type == TEXTBOX)) {
-        if (guiArray[currentGUI].Hovered == 0)
+        if (guiArray[currentGUI].Hovered == false)
             guiArray[currentGUI].MouseLeave(currentGUI);
 
-        guiArray[currentGUI].Hovered = 1;
+        guiArray[currentGUI].Hovered = true;
 
         if (leftButtonDown) {
             /* Trigger MouseDown callback */
-            if (guiArray[currentGUI].Pressed == 0)
+            if (guiArray[currentGUI].Pressed == false)
                 guiArray[currentGUI].MouseDown(currentGUI);
 
             /* Change Property */
-            guiArray[currentGUI].Pressed = 1;
+            guiArray[currentGUI].Pressed = true;
             cursor = strlen(guiArray[currentGUI].Text);
 
             if (isFocused && guiArray[currentGUI].Type == TEXTBOX) {
@@ -318,21 +319,21 @@ void handleGUI(int currentGUI) {
                 SDL_StartTextInput();
 
                 currentGUI_Focused = currentGUI;
-                isFocused = 1;
-                guiArray[currentGUI].Focused = 1;
+                isFocused = true;
+                guiArray[currentGUI].Focused = true;
             }
 
         }
         else {
-            guiArray[currentGUI].Pressed = 0;
+            guiArray[currentGUI].Pressed = false;
         }
     }
     else if ((!isColliding && guiArray[currentGUI].Type == TEXTBUTTON) || (!isColliding && guiArray[currentGUI].Type == IMAGEBUTTON) || (!isColliding && guiArray[currentGUI].Type == TEXTBOX)) {
-        if (guiArray[currentGUI].Hovered == 1)
+        if (guiArray[currentGUI].Hovered == true)
             guiArray[currentGUI].MouseEnter(currentGUI);
 
-        guiArray[currentGUI].Hovered = 0;
-        guiArray[currentGUI].Pressed = 0;
+        guiArray[currentGUI].Hovered = false;
+        guiArray[currentGUI].Pressed = false;
     }
 }
 
@@ -348,22 +349,22 @@ int ConstructGUI(enum GUI_TYPE GUI) {
         lastGUI_item += 1;
 
         newGUI.Type = GUI;
-        newGUI.Hovered = 0;
-        newGUI.Pressed = 0;
+        newGUI.Hovered = false;
+        newGUI.Pressed = false;
 
         newGUI.PositionX = 0;
         newGUI.PositionY = 0;
         newGUI.SizeX = 70;
         newGUI.SizeY = 25;
 
-        newGUI.Visible = 1;
+        newGUI.Visible = true;
         newGUI.BorderSize = 1;
         newGUI.OutlineSize = 0;
 
         newGUI.TextSize = 16;
-        newGUI.TextWrapped = 0;
-        newGUI.TextFits = 1;
-        newGUI.TextScaled = 0;
+        newGUI.TextWrapped = false;
+        newGUI.TextFits = true;
+        newGUI.TextScaled = false;
 
         newGUI.TextColor = TextColor;
         newGUI.BackgroundColor = BackgroundColor;
@@ -399,15 +400,15 @@ int ConstructGUI(enum GUI_TYPE GUI) {
         newGUI.Font = Font;
 
         if (GUI == TEXTLABEL) {
-            newGUI.TextEditable = 0;
+            newGUI.TextEditable = false;
         } else if (GUI == TEXTBUTTON) {
-            newGUI.TextEditable = 0;
+            newGUI.TextEditable = false;
         } else if (GUI == TEXTBOX) {
-            newGUI.TextEditable = 1;
+            newGUI.TextEditable = true;
         } else if (GUI == IMAGEBUTTON) {
-            newGUI.TextEditable = 0;
+            newGUI.TextEditable = false;
         } else if (GUI == IMAGELABEL) {
-            newGUI.TextEditable = 0;
+            newGUI.TextEditable = false;
         }
 
         guiArray[lastGUI_item] = newGUI;
@@ -422,7 +423,7 @@ void renderGUI() {
     for (int i = 0; i < 100; i++) {
         if (i > lastGUI_item)
             break;
-        if (guiArray[i].Visible == 0)
+        if (guiArray[i].Visible == false)
             continue;
 
         handleGUI(i);
@@ -460,20 +461,22 @@ int initLayer(SDL_Renderer *renderer, SDL_Window *window) {
 
     Font = TTF_OpenFont("arial.ttf", 16);
 
-    return 1;
+    return true;
 }
 
 int changeDefaultFont(char *fontName, int fontSize) {
     Font = TTF_OpenFont(fontName, fontSize);
 
     if (!Font)
-        return 0;
-    return 1;
+        return false;
+    return true;
 }
 
 void uninitLayer() {
     for (int i = 0; i < lastGUI_item; i++) {
         SDL_DestroyTexture(guiArray[i].TextureText);
-        free(guiArray[i].Text);
+
+        if (guiArray[i].Type == TEXTBOX)
+            free(guiArray[i].Text);
     }
 }
