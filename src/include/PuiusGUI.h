@@ -19,6 +19,8 @@ The project is licensed under MIT license. SDL_image.h, SDL.h and SDL_ttf.h are 
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
+#include <stdbool.h>
+
 enum GUI_TYPE {
     TEXTLABEL,
     TEXTBOX,
@@ -27,74 +29,76 @@ enum GUI_TYPE {
     IMAGEBUTTON,
 };
 
-enum TEXT_ALIGMENT {
-    CENTERED,
+enum TEXT_XALIGNMENT {
+    X_CENTER,
     LEFT,
     RIGHT,
+};
+
+enum TEXT_YALIGNMENT {
+    TOP,
+    Y_CENTER,
+    BOTTOM,
 };
 
 struct Color3 {
   int R;
   int G;
   int B;
+  int A;
 };
 
 struct guiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
+
   int BorderSize;
+  int OutlineSize;
+  bool Visible;
 
   struct Color3 BackgroundColor;
   struct Color3 TextColor;
+  struct Color3 BorderColor;
 
   SDL_Texture *Image;
 
   enum GUI_TYPE Type;
-  enum TEXT_ALIGMENT TextAligment;
+  enum TEXT_XALIGNMENT TextXAlignment;
+  enum TEXT_YALIGNMENT TextYAlignment;
 
-  int Pressed;
-  int Active;
-  int Hovered;
-  int TextEditable;
-  int Focused;
+  bool Pressed;
+  bool Active;
+  bool Hovered;
+  bool TextEditable;
+  bool Focused;
+
+  bool TextFits;
+  bool TextScaled;
+  bool TextWrapped;
+  int TextSize;
 
   void (*MouseDown)(int guiIndex);
   void (*MouseEnter)(int guiIndex);
   void (*MouseLeave)(int guiIndex);
   void (*FocusLost)(int guiIndex);
 
-  SDL_Rect rect;
+  TTF_Font *Font;
+
+  SDL_Rect TextRectangle;
   SDL_Texture *TextureText;
   char *Text;
 };
 
-struct inputStruct {
-  int A; int N;
-  int B; int O;
-  int C; int P;
-  int D; int Q;
-  int E; int R;
-  int F; int S;
-  int G; int T;
-  int H; int U;
-  int I; int V;
-  int J; int W;
-  int K; int X;
-  int L; int Y;
-  int M; int Z;
-
-  int ESC; int SDL_QUIT;
-  int LEFT_BUTTON; int RIGHT_BUTTON;
-};
-
 void DrawRectangleRec(struct guiProperties rectangle);
+
 int initLayer(SDL_Renderer *renderer, SDL_Window *window);
+int changeDefaultFont(char *fontName, int fontSize);
 void uninitLayer();
-void processInput(struct inputStruct *keys);
 
-struct Color3 initColor3(int R, int G, int B);
+void processInput();
 
-// GUI related
+struct Color3 initColor3(int R, int G, int B, int A);
+
 int ConstructGUI(enum GUI_TYPE);
 void renderGUI();
 void updateGUI(int GUI_Index);
@@ -102,5 +106,9 @@ void updateAllGUI();
 
 extern struct guiProperties guiArray[100];
 extern int lastGUI_item;
+extern int isFocused;
+extern int currentGUI_Focused;
+extern int inputs[258];
+extern int running;
 
 #endif
