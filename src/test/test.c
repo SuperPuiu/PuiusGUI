@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "include/PuiusGUI.h"
 
-struct inputStruct input;
-int game_running = 1;
-
 void buttonCallback(int guiIndex) {
-    guiArray[guiIndex].Visible = 0;
+    GuiArray[guiIndex].Visible = 0;
 }
 
 int main() {
@@ -24,49 +22,50 @@ int main() {
     );
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
-    initLayer(renderer, window);
+    InitLayer(renderer, window);
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_MUL);
 
-    int index1 = ConstructGUI(TEXTBOX);
-    int index2 = ConstructGUI(TEXTLABEL);
-    int index3 = ConstructGUI(TEXTBUTTON);
+    int index1 = ConstructGUI(TEXTBOX, 100, 100);
+    int index2 = ConstructGUI(TEXTLABEL, 200, 200);
+    int index3 = ConstructGUI(TEXTBUTTON, 0, 0);
 
-    guiArray[index2].PositionX = 200;
-    guiArray[index1].PositionY = 100;
-    guiArray[index1].PositionX = 100;
-    guiArray[index2].PositionY = 200;
+    GuiArray[index2].TextColor = InitColor3(0, 100, 255, 255);
+    GuiArray[index2].BackgroundColor = InitColor3(0, 0, 0, 255);
 
-    guiArray[index2].TextColor = initColor3(0, 100, 255, 255);
-    guiArray[index2].BackgroundColor = initColor3(0, 0, 0, 255);
+    GuiArray[index2].Text = "Label";
+    GuiArray[index3].Text = "Button";
 
-    guiArray[index2].Text = "Label";
-    guiArray[index3].Text = "Button";
+    GuiArray[index3].MouseDown = buttonCallback;
+    GuiArray[index1].TextXAlignment = X_CENTER;
+    GuiArray[index1].TextYAlignment = Y_CENTER;
 
-    guiArray[index3].MouseDown = buttonCallback;
-    guiArray[index1].TextXAlignment = X_CENTER;
-    guiArray[index1].TextYAlignment = Y_CENTER;
+    GuiArray[index1].BorderSize = 5;
+    GuiArray[index1].TextWrapped = true;
+    GuiArray[index1].TextSize = 32;
+    GuiArray[index3].OutlineSize = 1;
 
-    guiArray[index1].SizeY = 300;
-    updateAllGUI();
+    GuiArray[index1].SizeY = 300;
+    UpdateAllGUI();
 
-    while(game_running) {
-        processInput(&input);
+    while(Running == 1) {
+        ProcessInput();
 
-        if (input.SDL_QUIT || input.ESC) {
-            game_running = 0;
-        }
+        if(Inputs[41] == 1)
+            Running = 0;
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
-        renderGUI();
+        RenderGUI();
 
         SDL_RenderPresent(renderer);
     }
-    return 0;
+
+    printf("%s\n", GuiArray[index1].Text);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
-    uninitLayer();
+    UninitLayer();
+    return 0;
 }
