@@ -48,7 +48,7 @@ struct Color3 {
   int A;
 };
 
-struct guiProperties {
+struct GuiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
 
@@ -77,10 +77,10 @@ struct guiProperties {
   bool TextWrapped;
   int TextSize;
 
-  void (*MouseDown)(int guiIndex);
-  void (*MouseEnter)(int guiIndex);
-  void (*MouseLeave)(int guiIndex);
-  void (*FocusLost)(int guiIndex);
+  void (*MouseDown)(int GuiIndex);
+  void (*MouseEnter)(int GuiIndex);
+  void (*MouseLeave)(int GuiIndex);
+  void (*FocusLost)(int GuiIndex);
 
   TTF_Font *Font;
 
@@ -89,26 +89,26 @@ struct guiProperties {
   char *Text;
 };
 
-void DrawRectangleRec(struct guiProperties rectangle);
+void DrawRectangleRec(struct GuiProperties rectangle);
 
-int initLayer(SDL_Renderer *renderer, SDL_Window *window);
-int changeDefaultFont(char *fontName, int fontSize);
-void uninitLayer();
+int InitLayer(SDL_Renderer *renderer, SDL_Window *window);
+int ChangeDefaultFont(char *FontName, int FontSize);
+void UninitLayer();
 
-void processInput();
+void ProcessInput();
 
-struct Color3 initColor3(int R, int G, int B, int A);
+struct Color3 InitColor3(int R, int G, int B, int A);
 
-int ConstructGUI(enum GUI_TYPE);
-void renderGUI();
-void updateGUI(int GUI_Index);
-void updateAllGUI();
+int ConstructGUI(enum GUI_TYPE, int X, int Y);
+void RenderGUI();
+void UpdateGUI(int GUI_Index);
+void UpdateAllGUI();
 
-extern struct guiProperties guiArray[100];
-extern int lastGUI_item;
-extern int isFocused;
-extern int currentGUI_Focused;
-extern int inputs[258];
-extern int running;
+extern struct GuiProperties GuiArray[100];
+extern int LastGUI_item;
+extern int IsFocused;
+extern int CurrentGUI_Focused;
+extern int Inputs[258];
+extern int Running;
 
 #endif
