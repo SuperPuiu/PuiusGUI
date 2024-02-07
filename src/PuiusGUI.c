@@ -11,35 +11,35 @@
 SDL_Renderer *globalRenderer;
 SDL_Window *globalWindow;
 
-struct guiProperties guiArray[100];
-int inputs[258];
-int running = true;
-int lastGUI_item = -1;
+struct GuiProperties GuiArray[100];
+int Inputs[258];
+int Running = true;
+int LastGUI_item = -1;
 
 TTF_Font *Font;
 
 int MouseY, MouseX;
-int leftButtonDown = false;
+int LeftButtonDown = false;
 
 // Textbox values
-int isFocused = false;
-int cursor = 0;
-int currentGUI_Focused = -1;
+int IsFocused = false;
+int Cursor = 0;
+int CurrentGUI_Focused = -1;
 
 void defaultCallback(int a) {} // Used for ConstructGUI()
 void defaultCallbackHover(int index) { // Used for ConstructGUI()
-    guiArray[index].BackgroundColor.R += 10;
-    guiArray[index].BackgroundColor.G += 10;
-    guiArray[index].BackgroundColor.B += 10;
+    GuiArray[index].BackgroundColor.R += 10;
+    GuiArray[index].BackgroundColor.G += 10;
+    GuiArray[index].BackgroundColor.B += 10;
 }
 
 void defaultCallbackHoverLeave(int index) {
-    guiArray[index].BackgroundColor.R -= 10;
-    guiArray[index].BackgroundColor.G -= 10;
-    guiArray[index].BackgroundColor.B -= 10;
+    GuiArray[index].BackgroundColor.R -= 10;
+    GuiArray[index].BackgroundColor.G -= 10;
+    GuiArray[index].BackgroundColor.B -= 10;
 }
 
-struct Color3 initColor3(int R, int G, int B, int A) {
+struct Color3 InitColor3(int R, int G, int B, int A) {
     struct Color3 Color;
 
     Color.R = R;
@@ -50,7 +50,7 @@ struct Color3 initColor3(int R, int G, int B, int A) {
     return Color;
 }
 
-SDL_Point initPoint(int x, int y) {
+SDL_Point InitPoint(int x, int y) {
     SDL_Point point;
     point.x = x;
     point.y = y;
@@ -58,13 +58,13 @@ SDL_Point initPoint(int x, int y) {
     return point;
 }
 
-int CollosionRectPoint(struct guiProperties rect, int pointX, int pointY) {
+int CollosionRectPoint(struct GuiProperties rect, int pointX, int pointY) {
     if (pointX > rect.PositionX && pointX < rect.PositionX + rect.SizeX && pointY > rect.PositionY && pointY < rect.PositionY + rect.SizeY)
             return true;
         return false;
 }
 
-void DrawRectangleRec(struct guiProperties rectangle) {
+void DrawRectangleRec(struct GuiProperties rectangle) {
     /* Set the color to the specified color, draw the rectangle, reset the color. */
     if (globalRenderer) {
         SDL_Color oldColor = {0, 0, 0, 0};
@@ -100,7 +100,7 @@ void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color) {
     }
 }
 
-void DrawText(struct guiProperties gui) {
+void DrawText(struct GuiProperties gui) {
     if (globalRenderer) {
         SDL_Color oldColor = {0, 0, 0, 0};
         SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
@@ -111,7 +111,7 @@ void DrawText(struct guiProperties gui) {
     }
 }
 
-void DrawTextureEx(struct guiProperties rectangle) {
+void DrawTextureEx(struct GuiProperties rectangle) {
     if (globalRenderer) {
         SDL_Color oldColor = {0, 0, 0, 0};
         SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
@@ -132,13 +132,17 @@ void DrawTextureEx(struct guiProperties rectangle) {
     }
 }
 
-void writeToTextBox(char *str) {
-    if(isFocused == false) {
+void DrawCursor() {
+
+}
+
+void WriteToTextBox(char *str) {
+    if(IsFocused == false) {
         return;
     }
-    // printf("%i\n", cursor);
+    // printf("%i\n", Cursor);
 
-    int textLength = strlen(guiArray[currentGUI_Focused].Text);
+    int textLength = strlen(GuiArray[CurrentGUI_Focused].Text);
     char *alloc;
 
     alloc = malloc(textLength * 2);
@@ -150,210 +154,210 @@ void writeToTextBox(char *str) {
 
     if (strcmp(str, "ENTER") == 0) {
         for (int i = 0; i <= strlen(alloc); i++) {
-            if (i == cursor) {
+            if (i == Cursor) {
                 alloc[i] = '\n';
-                alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+                alloc[i + 1] = GuiArray[CurrentGUI_Focused].Text[i];
                 continue;
-            } else if (i > cursor) {
-                alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+            } else if (i > Cursor) {
+                alloc[i + 1] = GuiArray[CurrentGUI_Focused].Text[i];
             } else {
-                alloc[i] = guiArray[currentGUI_Focused].Text[i];
+                alloc[i] = GuiArray[CurrentGUI_Focused].Text[i];
             }
         };
 
-        cursor = cursor + 1;
+        Cursor = Cursor + 1;
     }
     else if(strcmp(str, "BACKSPACE") == 0) {
-        strcpy(alloc, guiArray[currentGUI_Focused].Text);
-        for (int i = (cursor - 1); alloc[i] != '\0'; i++) {
+        strcpy(alloc, GuiArray[CurrentGUI_Focused].Text);
+        for (int i = (Cursor - 1); alloc[i] != '\0'; i++) {
             alloc[i] = alloc[i + 1];
         }
 
-        if (cursor > 0)
-            cursor -= 1;
+        if (Cursor > 0)
+            Cursor -= 1;
     }
     else {
         for (int i = 0; i <= strlen(alloc); i++) {
-            if (i == cursor) {
+            if (i == Cursor) {
                 alloc[i] = str[0];
-                alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+                alloc[i + 1] = GuiArray[CurrentGUI_Focused].Text[i];
                 continue;
-            } else if (i > cursor) {
-                alloc[i + 1] = guiArray[currentGUI_Focused].Text[i];
+            } else if (i > Cursor) {
+                alloc[i + 1] = GuiArray[CurrentGUI_Focused].Text[i];
             } else {
-                alloc[i] = guiArray[currentGUI_Focused].Text[i];
+                alloc[i] = GuiArray[CurrentGUI_Focused].Text[i];
             }
         };
 
-        cursor = cursor + 1;
+        Cursor = Cursor + 1;
     }
-    free(guiArray[currentGUI_Focused].Text);
+    free(GuiArray[CurrentGUI_Focused].Text);
 
-    guiArray[currentGUI_Focused].Text = alloc;
-    updateGUI(currentGUI_Focused);
+    GuiArray[CurrentGUI_Focused].Text = alloc;
+    UpdateGUI(CurrentGUI_Focused);
 }
 
-void processInput() {
+void ProcessInput() {
     SDL_Event event;
 
     while(SDL_PollEvent(&event)) {
         switch(event.type) {
             case SDL_QUIT:
-                running = false;
+                Running = false;
                 break;
             case SDL_KEYDOWN:
                 if (event.key.keysym.sym == SDLK_RETURN)
-                    writeToTextBox("ENTER");
+                    WriteToTextBox("ENTER");
                 else if (event.key.keysym.sym == SDLK_BACKSPACE)
-                    writeToTextBox("BACKSPACE");
-                inputs[event.key.keysym.scancode] = 1;
+                    WriteToTextBox("BACKSPACE");
+                Inputs[event.key.keysym.scancode] = 1;
                 break;
             case SDL_KEYUP:
-                inputs[event.key.keysym.scancode] = 0;
+                Inputs[event.key.keysym.scancode] = 0;
                 break;
             case SDL_MOUSEMOTION:
                 SDL_GetMouseState(&MouseX, &MouseY);
                 break;
             case SDL_MOUSEBUTTONUP:
                 if (event.button.button == SDL_BUTTON_LEFT) {
-                    inputs[257] = 0;
-                    leftButtonDown = false;
+                    Inputs[257] = 0;
+                    LeftButtonDown = false;
                     // input->LEFT_BUTTON = 0;
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (event.button.button == SDL_BUTTON_LEFT) {
-                    inputs[257] = 1;
+                    Inputs[257] = 1;
 
-                    if (isFocused) {
-                        isFocused = false;
-                        guiArray[currentGUI_Focused].FocusLost(currentGUI_Focused);
+                    if (IsFocused) {
+                        IsFocused = false;
+                        GuiArray[CurrentGUI_Focused].FocusLost(CurrentGUI_Focused);
                     }
 
-                    leftButtonDown = true;
+                    LeftButtonDown = true;
                 }
                 break;
             case SDL_TEXTINPUT:
-                writeToTextBox(event.text.text);
+                WriteToTextBox(event.text.text);
         }
     }
 }
 
-void updateGUI(int GUI_Index) {
-    SDL_Color Color = {guiArray[GUI_Index].TextColor.R, guiArray[GUI_Index].TextColor.G, guiArray[GUI_Index].TextColor.B};
+void UpdateGUI(int GUI_Index) {
+    SDL_Color Color = {GuiArray[GUI_Index].TextColor.R, GuiArray[GUI_Index].TextColor.G, GuiArray[GUI_Index].TextColor.B};
 
-    TTF_SetFontSize(guiArray[GUI_Index].Font, guiArray[GUI_Index].TextSize);
-    TTF_SetFontOutline(guiArray[GUI_Index].Font, guiArray[GUI_Index].OutlineSize);
+    TTF_SetFontSize(GuiArray[GUI_Index].Font, GuiArray[GUI_Index].TextSize);
+    TTF_SetFontOutline(GuiArray[GUI_Index].Font, GuiArray[GUI_Index].OutlineSize);
     SDL_Surface *surfaceMessage;
 
-    if (guiArray[GUI_Index].TextWrapped)
-        surfaceMessage = TTF_RenderText_Blended_Wrapped(guiArray[GUI_Index].Font, guiArray[GUI_Index].Text, Color, guiArray[GUI_Index].SizeX);
+    if (GuiArray[GUI_Index].TextWrapped)
+        surfaceMessage = TTF_RenderText_Blended_Wrapped(GuiArray[GUI_Index].Font, GuiArray[GUI_Index].Text, Color, GuiArray[GUI_Index].SizeX);
     else
-        surfaceMessage = TTF_RenderText_Blended_Wrapped(guiArray[GUI_Index].Font, guiArray[GUI_Index].Text, Color, 0);
+        surfaceMessage = TTF_RenderText_Blended_Wrapped(GuiArray[GUI_Index].Font, GuiArray[GUI_Index].Text, Color, 0);
 
     SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
 
-    SDL_GetClipRect(surfaceMessage, &guiArray[GUI_Index].TextRectangle);
-    // guiArray[GUI_Index].TextRectangle.x = guiArray[GUI_Index].PositionX;
-    // guiArray[GUI_Index].TextRectangle.y = guiArray[GUI_Index].PositionY;
+    SDL_GetClipRect(surfaceMessage, &GuiArray[GUI_Index].TextRectangle);
+    // GuiArray[GUI_Index].TextRectangle.x = GuiArray[GUI_Index].PositionX;
+    // GuiArray[GUI_Index].TextRectangle.y = GuiArray[GUI_Index].PositionY;
 
     /* Calculate the position based on gui's enums */
 
-    if (guiArray[GUI_Index].TextXAlignment == LEFT) {
-        guiArray[GUI_Index].TextRectangle.x = guiArray[GUI_Index].PositionX;
-    } else if (guiArray[GUI_Index].TextXAlignment == RIGHT) {
-        guiArray[GUI_Index].TextRectangle.x = (guiArray[GUI_Index].PositionX + guiArray[GUI_Index].SizeX) - guiArray[GUI_Index].TextRectangle.w;
-    } else if (guiArray[GUI_Index].TextXAlignment == X_CENTER) {
-        guiArray[GUI_Index].TextRectangle.x = (guiArray[GUI_Index].SizeX / 2 + guiArray[GUI_Index].PositionX) - guiArray[GUI_Index].TextRectangle.w / 2;
+    if (GuiArray[GUI_Index].TextXAlignment == LEFT) {
+        GuiArray[GUI_Index].TextRectangle.x = GuiArray[GUI_Index].PositionX;
+    } else if (GuiArray[GUI_Index].TextXAlignment == RIGHT) {
+        GuiArray[GUI_Index].TextRectangle.x = (GuiArray[GUI_Index].PositionX + GuiArray[GUI_Index].SizeX) - GuiArray[GUI_Index].TextRectangle.w;
+    } else if (GuiArray[GUI_Index].TextXAlignment == X_CENTER) {
+        GuiArray[GUI_Index].TextRectangle.x = (GuiArray[GUI_Index].SizeX / 2 + GuiArray[GUI_Index].PositionX) - GuiArray[GUI_Index].TextRectangle.w / 2;
     }
 
-    if (guiArray[GUI_Index].TextYAlignment == TOP) {
-        guiArray[GUI_Index].TextRectangle.y = guiArray[GUI_Index].PositionY;
-    } else if (guiArray[GUI_Index].TextYAlignment == Y_CENTER) {
-        guiArray[GUI_Index].TextRectangle.y = (guiArray[GUI_Index].SizeY / 2 + guiArray[GUI_Index].PositionY) - guiArray[GUI_Index].TextRectangle.h / 2;
-    } else if (guiArray[GUI_Index].TextYAlignment == BOTTOM) {
-        guiArray[GUI_Index].TextRectangle.y = (guiArray[GUI_Index].PositionY + guiArray[GUI_Index].SizeY) - guiArray[GUI_Index].TextRectangle.h;
+    if (GuiArray[GUI_Index].TextYAlignment == TOP) {
+        GuiArray[GUI_Index].TextRectangle.y = GuiArray[GUI_Index].PositionY;
+    } else if (GuiArray[GUI_Index].TextYAlignment == Y_CENTER) {
+        GuiArray[GUI_Index].TextRectangle.y = (GuiArray[GUI_Index].SizeY / 2 + GuiArray[GUI_Index].PositionY) - GuiArray[GUI_Index].TextRectangle.h / 2;
+    } else if (GuiArray[GUI_Index].TextYAlignment == BOTTOM) {
+        GuiArray[GUI_Index].TextRectangle.y = (GuiArray[GUI_Index].PositionY + GuiArray[GUI_Index].SizeY) - GuiArray[GUI_Index].TextRectangle.h;
     }
 
-    if (guiArray[GUI_Index].TextRectangle.w > guiArray[GUI_Index].SizeX)
-        guiArray[GUI_Index].TextFits = 0;
+    if (GuiArray[GUI_Index].TextRectangle.w > GuiArray[GUI_Index].SizeX)
+        GuiArray[GUI_Index].TextFits = 0;
     else
-        guiArray[GUI_Index].TextFits = 1;
+        GuiArray[GUI_Index].TextFits = 1;
 
-    if (guiArray[GUI_Index].TextRectangle.h > guiArray[GUI_Index].SizeY)
-        guiArray[GUI_Index].TextFits = 0;
+    if (GuiArray[GUI_Index].TextRectangle.h > GuiArray[GUI_Index].SizeY)
+        GuiArray[GUI_Index].TextFits = 0;
     else
-        guiArray[GUI_Index].TextFits = 1;
+        GuiArray[GUI_Index].TextFits = 1;
 
-    guiArray[GUI_Index].TextureText = Message;
+    GuiArray[GUI_Index].TextureText = Message;
     SDL_FreeSurface(surfaceMessage);
 }
 
-void updateAllGUI() {
-    for (int i = 0; i <= lastGUI_item; i++) {
-        updateGUI(i);
+void UpdateAllGUI() {
+    for (int i = 0; i <= LastGUI_item; i++) {
+        UpdateGUI(i);
     }
 }
 
-void handleGUI(int currentGUI) {
-    int isColliding = CollosionRectPoint(guiArray[currentGUI], MouseX, MouseY);
+void HandleGUI(int currentGUI) {
+    int isColliding = CollosionRectPoint(GuiArray[currentGUI], MouseX, MouseY);
 
-    if ((isColliding && guiArray[currentGUI].Type == TEXTBUTTON) || (isColliding && guiArray[currentGUI].Type == IMAGEBUTTON) || (isColliding && guiArray[currentGUI].Type == TEXTBOX)) {
-        if (guiArray[currentGUI].Hovered == false)
-            guiArray[currentGUI].MouseLeave(currentGUI);
+    if ((isColliding && GuiArray[currentGUI].Type == TEXTBUTTON) || (isColliding && GuiArray[currentGUI].Type == IMAGEBUTTON) || (isColliding && GuiArray[currentGUI].Type == TEXTBOX)) {
+        if (GuiArray[currentGUI].Hovered == false)
+            GuiArray[currentGUI].MouseLeave(currentGUI);
 
-        guiArray[currentGUI].Hovered = true;
+        GuiArray[currentGUI].Hovered = true;
 
-        if (leftButtonDown) {
+        if (LeftButtonDown) {
             /* Trigger MouseDown callback */
-            if (guiArray[currentGUI].Pressed == false)
-                guiArray[currentGUI].MouseDown(currentGUI);
+            if (GuiArray[currentGUI].Pressed == false)
+                GuiArray[currentGUI].MouseDown(currentGUI);
 
             /* Change Property */
-            guiArray[currentGUI].Pressed = true;
-            cursor = strlen(guiArray[currentGUI].Text);
+            GuiArray[currentGUI].Pressed = true;
+            Cursor = strlen(GuiArray[currentGUI].Text);
 
-            if (isFocused && guiArray[currentGUI].Type == TEXTBOX) {
-                currentGUI_Focused = currentGUI;
-            } else if (!isFocused) {
+            if (IsFocused && GuiArray[currentGUI].Type == TEXTBOX) {
+                CurrentGUI_Focused = currentGUI;
+            } else if (!IsFocused) {
                 SDL_StartTextInput();
 
-                currentGUI_Focused = currentGUI;
-                isFocused = true;
-                guiArray[currentGUI].Focused = true;
+                CurrentGUI_Focused = currentGUI;
+                IsFocused = true;
+                GuiArray[currentGUI].Focused = true;
             }
 
         }
         else {
-            guiArray[currentGUI].Pressed = false;
+            GuiArray[currentGUI].Pressed = false;
         }
     }
-    else if ((!isColliding && guiArray[currentGUI].Type == TEXTBUTTON) || (!isColliding && guiArray[currentGUI].Type == IMAGEBUTTON) || (!isColliding && guiArray[currentGUI].Type == TEXTBOX)) {
-        if (guiArray[currentGUI].Hovered == true)
-            guiArray[currentGUI].MouseEnter(currentGUI);
+    else if ((!isColliding && GuiArray[currentGUI].Type == TEXTBUTTON) || (!isColliding && GuiArray[currentGUI].Type == IMAGEBUTTON) || (!isColliding && GuiArray[currentGUI].Type == TEXTBOX)) {
+        if (GuiArray[currentGUI].Hovered == true)
+            GuiArray[currentGUI].MouseEnter(currentGUI);
 
-        guiArray[currentGUI].Hovered = false;
-        guiArray[currentGUI].Pressed = false;
+        GuiArray[currentGUI].Hovered = false;
+        GuiArray[currentGUI].Pressed = false;
     }
 }
 
-int ConstructGUI(enum GUI_TYPE GUI) {
-    if (lastGUI_item < 100) {
+int ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
+    if (LastGUI_item < 100) {
         SDL_Color BLACK = {0, 0, 0};
 
-        struct Color3 TextColor = initColor3(0, 0, 0, 255);
-        struct Color3 BackgroundColor = initColor3(255, 255, 255, 255);
-        struct Color3 BorderColor = initColor3(0, 0, 0, 255);
+        struct Color3 TextColor = InitColor3(0, 0, 0, 255);
+        struct Color3 BackgroundColor = InitColor3(255, 255, 255, 255);
+        struct Color3 BorderColor = InitColor3(0, 0, 0, 255);
 
-        struct guiProperties newGUI;
-        lastGUI_item += 1;
+        struct GuiProperties newGUI;
+        LastGUI_item += 1;
 
         newGUI.Type = GUI;
         newGUI.Hovered = false;
         newGUI.Pressed = false;
 
-        newGUI.PositionX = 0;
-        newGUI.PositionY = 0;
+        newGUI.PositionX = X;
+        newGUI.PositionY = Y;
         newGUI.SizeX = 70;
         newGUI.SizeY = 25;
 
@@ -411,41 +415,45 @@ int ConstructGUI(enum GUI_TYPE GUI) {
             newGUI.TextEditable = false;
         }
 
-        guiArray[lastGUI_item] = newGUI;
+        GuiArray[LastGUI_item] = newGUI;
         SDL_FreeSurface(surfaceMessage);
-        return lastGUI_item;
+        return LastGUI_item;
     } else {
         return -1;
     }
 }
 
-void renderGUI() {
+void DrawCursor() {
+
+}
+
+void RenderGUI() {
     for (int i = 0; i < 100; i++) {
-        if (i > lastGUI_item)
+        if (i > LastGUI_item)
             break;
-        if (guiArray[i].Visible == false)
+        if (GuiArray[i].Visible == false)
             continue;
 
-        handleGUI(i);
-        struct Color3 color = initColor3(guiArray[i].BorderColor.R, guiArray[i].BorderColor.G, guiArray[i].BorderColor.B, guiArray[i].BorderColor.A);
+        HandleGUI(i);
+        struct Color3 color = InitColor3(GuiArray[i].BorderColor.R, GuiArray[i].BorderColor.G, GuiArray[i].BorderColor.B, GuiArray[i].BorderColor.A);
 
         // (x, y) - topleft
         // (x + sx, y) - topright
         // (x, y + sy) - bottomleft
         // (x + sx, y + sy) - bottomright
 
-        if(guiArray[i].Type != IMAGELABEL && guiArray[i].Type != IMAGEBUTTON) {
-            DrawRectangleRec(guiArray[i]);
-            DrawText(guiArray[i]);
+        if(GuiArray[i].Type != IMAGELABEL && GuiArray[i].Type != IMAGEBUTTON) {
+            DrawRectangleRec(GuiArray[i]);
+            DrawText(GuiArray[i]);
         }
         else
-            DrawTextureEx(guiArray[i]);
+            DrawTextureEx(GuiArray[i]);
 
-        for (int borderNum = 0; borderNum < guiArray[i].BorderSize; borderNum++) {
-            SDL_Point topLeft = initPoint(guiArray[i].PositionX, guiArray[i].PositionY);
-            SDL_Point topRight = initPoint(guiArray[i].PositionX + guiArray[i].SizeX, guiArray[i].PositionY);
-            SDL_Point bottomLeft = initPoint(guiArray[i].PositionX, guiArray[i].PositionY + guiArray[i].SizeY);
-            SDL_Point bottomRight = initPoint(guiArray[i].PositionX + guiArray[i].SizeX, guiArray[i].PositionY + guiArray[i].SizeY);
+        for (int borderNum = 0; borderNum < GuiArray[i].BorderSize; borderNum++) {
+            SDL_Point topLeft = InitPoint(GuiArray[i].PositionX, GuiArray[i].PositionY);
+            SDL_Point topRight = InitPoint(GuiArray[i].PositionX + GuiArray[i].SizeX, GuiArray[i].PositionY);
+            SDL_Point bottomLeft = InitPoint(GuiArray[i].PositionX, GuiArray[i].PositionY + GuiArray[i].SizeY);
+            SDL_Point bottomRight = InitPoint(GuiArray[i].PositionX + GuiArray[i].SizeX, GuiArray[i].PositionY + GuiArray[i].SizeY);
 
             DrawLine(topLeft.x, topLeft.y + borderNum, topRight.x, topRight.y + borderNum, color); /* Top line */
             DrawLine(topLeft.x + borderNum, topLeft.y, bottomLeft.x + borderNum, bottomLeft.y, color); /* Left line */
@@ -455,7 +463,7 @@ void renderGUI() {
     }
 }
 
-int initLayer(SDL_Renderer *renderer, SDL_Window *window) {
+int InitLayer(SDL_Renderer *renderer, SDL_Window *window) {
     globalRenderer = renderer;
     globalWindow = window;
 
@@ -464,7 +472,7 @@ int initLayer(SDL_Renderer *renderer, SDL_Window *window) {
     return true;
 }
 
-int changeDefaultFont(char *fontName, int fontSize) {
+int ChangeDefaultFont(char *fontName, int fontSize) {
     Font = TTF_OpenFont(fontName, fontSize);
 
     if (!Font)
@@ -472,11 +480,11 @@ int changeDefaultFont(char *fontName, int fontSize) {
     return true;
 }
 
-void uninitLayer() {
-    for (int i = 0; i < lastGUI_item; i++) {
-        SDL_DestroyTexture(guiArray[i].TextureText);
+void UninitLayer() {
+    for (int i = 0; i < LastGUI_item; i++) {
+        SDL_DestroyTexture(GuiArray[i].TextureText);
 
-        if (guiArray[i].Type == TEXTBOX)
-            free(guiArray[i].Text);
+        if (GuiArray[i].Type == TEXTBOX)
+            free(GuiArray[i].Text);
     }
 }
