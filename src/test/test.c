@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "include/PuiusGUI.h"
+#include "PuiusGUI.h"
 
 struct inputStruct input;
 int game_running = 1;

@@ -5,16 +5,18 @@ ifeq ($(PREFIX),)
 endif
 
 buildTest:
-	gcc -Wall -c main.c -o bin/test.o
-	gcc PuiusGUI.c -Wall bin/test.o -lSDL2_image -lSDL2_ttf `sdl2-config --libs` -o bin/endProduct -lm
+	mkdir -p ../build
+	gcc -Wall -c -Iinclude test/test.c -o ../build/test.o
+	gcc -Iinclude PuiusGUI.c -Wall ../build/test.o -lSDL2_image -lSDL2_ttf `sdl2-config --libs` -o ../build/endProduct -lm
 
 run:
-	./bin/endProduct
+	../build/endProduct
 buildSO:
-	gcc -c -fPIC PuiusGUI.c -o bin/PuiusGUI.o
-	gcc bin/PuiusGUI.o -shared -o bin/libpuiusgui.so
-install: bin/libpuiusgui.so
+	mkdir -p ../build
+	gcc -c -Iinclude/ -fPIC PuiusGUI.c -o ../build/PuiusGUI.o
+	gcc -Iinclude ../build/PuiusGUI.o -shared -o ../build/libpuiusgui.so
+install: ../build/libpuiusgui.so
 	install -d $(DESTDIR)$(PREFIX)/lib/
-	install -m 644 bin/libpuiusgui.so $(DESTDIR)$(PREFIX)/lib/
+	install -m 644 ../build/libpuiusgui.so $(DESTDIR)$(PREFIX)/lib/
 	install -d $(DESTDIR)$(PREFIX)/include/
 	install -m 644 include/PuiusGUI.h $(DESTDIR)$(PREFIX)/include/

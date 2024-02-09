@@ -28,7 +28,10 @@ enum GUI_TYPE {
 };
 
 enum TEXT_ALIGMENT {
-    CENTERED,
+    TOP,
+    BOTTOM,
+    X_CENTER,
+    Y_CENTER,
     LEFT,
     RIGHT,
 };
@@ -37,20 +40,33 @@ struct Color3 {
   int R;
   int G;
   int B;
+  int A;
 };
 
 struct guiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
-  int BorderSize;
+  int Visible;
 
+  int OutlineSize;
+  int BorderSize;
+  int TextSize;
+  int TextScaled;
+
+  int TextFits;
+  int TextWrapped;
+  SDL_Rect TextRectangle;
+  TTF_Font *Font;
+
+  struct Color3 BorderColor;
   struct Color3 BackgroundColor;
   struct Color3 TextColor;
 
   SDL_Texture *Image;
 
   enum GUI_TYPE Type;
-  enum TEXT_ALIGMENT TextAligment;
+  enum TEXT_ALIGMENT TextXAlignment;
+  enum TEXT_ALIGMENT TextYAlignment;
 
   int Pressed;
   int Active;
@@ -92,7 +108,7 @@ int initLayer(SDL_Renderer *renderer, SDL_Window *window);
 void uninitLayer();
 void processInput(struct inputStruct *keys);
 
-struct Color3 initColor3(int R, int G, int B);
+struct Color3 initColor3(int R, int G, int B, int A);
 
 // GUI related
 int ConstructGUI(enum GUI_TYPE);

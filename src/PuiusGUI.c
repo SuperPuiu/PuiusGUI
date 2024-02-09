@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "include/PuiusGUI.h"
+#include "PuiusGUI.h"
 
 SDL_Renderer *globalRenderer;
 SDL_Window *globalWindow;
