@@ -240,6 +240,15 @@ void ProcessInput() {
 }
 
 void UpdateGUI(int GUI_Index) {
+    printf("ID: %i Zindex: %i\n", GUI_Index, GuiArray[GUI_Index].Zindex);
+
+    if (GuiArray[GUI_Index].Parent > -1 && GuiArray[GUI_Index].Parent < LastGUI_item) {
+        int Parent = GuiArray[GUI_Index].Parent;
+
+        GuiArray[GUI_Index].PositionX = GuiArray[GUI_Index].PositionX + GuiArray[Parent].PositionX;
+        GuiArray[GUI_Index].PositionY = GuiArray[GUI_Index].PositionY + GuiArray[Parent].PositionY;
+    }
+
     SDL_Color Color = {GuiArray[GUI_Index].TextColor.R, GuiArray[GUI_Index].TextColor.G, GuiArray[GUI_Index].TextColor.B};
 
     TTF_SetFontSize(GuiArray[GUI_Index].Font, GuiArray[GUI_Index].TextSize);
@@ -348,6 +357,9 @@ int ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
         struct GuiProperties newGUI;
         LastGUI_item += 1;
 
+        newGUI.Parent = -1;
+        newGUI.Zindex = 1;
+
         newGUI.Type = GUI;
         newGUI.Hovered = false;
         newGUI.Pressed = false;
@@ -423,38 +435,53 @@ void DrawCursor() {
 
 }
 
+void DrawGUI(int i) {
+    struct Color3 color = InitColor3(GuiArray[i].BorderColor.R, GuiArray[i].BorderColor.G, GuiArray[i].BorderColor.B, GuiArray[i].BorderColor.A);
+
+    // (x, y) - topleft
+    // (x + sx, y) - topright
+    // (x, y + sy) - bottomleft
+    // (x + sx, y + sy) - bottomright
+
+    if(GuiArray[i].Type != IMAGELABEL && GuiArray[i].Type != IMAGEBUTTON) {
+        DrawRectangleRec(GuiArray[i]);
+        DrawText(GuiArray[i]);
+    }
+    else
+        DrawTextureEx(GuiArray[i]);
+
+    for (int borderNum = 0; borderNum < GuiArray[i].BorderSize; borderNum++) {
+        SDL_Point topLeft = InitPoint(GuiArray[i].PositionX, GuiArray[i].PositionY);
+        SDL_Point topRight = InitPoint(GuiArray[i].PositionX + GuiArray[i].SizeX, GuiArray[i].PositionY);
+        SDL_Point bottomLeft = InitPoint(GuiArray[i].PositionX, GuiArray[i].PositionY + GuiArray[i].SizeY);
+        SDL_Point bottomRight = InitPoint(GuiArray[i].PositionX + GuiArray[i].SizeX, GuiArray[i].PositionY + GuiArray[i].SizeY);
+
+        DrawLine(topLeft.x, topLeft.y + borderNum, topRight.x, topRight.y + borderNum, color); /* Top line */
+        DrawLine(topLeft.x + borderNum, topLeft.y, bottomLeft.x + borderNum, bottomLeft.y, color); /* Left line */
+        DrawLine(bottomRight.x, bottomRight.y - borderNum, bottomLeft.x, bottomRight.y - borderNum, color); /* Bottom line */
+        DrawLine(bottomRight.x - borderNum, bottomRight.y, topRight.x - borderNum, topRight.y,color); /* Right line */
+    }
+}
+
 void RenderGUI() {
-    for (int i = 0; i < 100; i++) {
-        if (i > LastGUI_item)
+    int LargestZindex = 2;
+
+    for (int x = 1; x < 40; x++) {
+        if (LargestZindex + 1 == x)
             break;
-        if (GuiArray[i].Visible == false)
-            continue;
 
-        HandleGUI(i);
-        struct Color3 color = InitColor3(GuiArray[i].BorderColor.R, GuiArray[i].BorderColor.G, GuiArray[i].BorderColor.B, GuiArray[i].BorderColor.A);
+        for (int i = 0; i < 100; i++) {
+            if (i > LastGUI_item || GuiArray[i].Zindex == 0)
+                break;
 
-        // (x, y) - topleft
-        // (x + sx, y) - topright
-        // (x, y + sy) - bottomleft
-        // (x + sx, y + sy) - bottomright
+            if (GuiArray[i].Zindex != x || GuiArray[i].Visible == false)
+                continue;
 
-        if(GuiArray[i].Type != IMAGELABEL && GuiArray[i].Type != IMAGEBUTTON) {
-            DrawRectangleRec(GuiArray[i]);
-            DrawText(GuiArray[i]);
-        }
-        else
-            DrawTextureEx(GuiArray[i]);
+            if (GuiArray[i].Zindex > LargestZindex)
+                LargestZindex = GuiArray[i].Zindex;
 
-        for (int borderNum = 0; borderNum < GuiArray[i].BorderSize; borderNum++) {
-            SDL_Point topLeft = InitPoint(GuiArray[i].PositionX, GuiArray[i].PositionY);
-            SDL_Point topRight = InitPoint(GuiArray[i].PositionX + GuiArray[i].SizeX, GuiArray[i].PositionY);
-            SDL_Point bottomLeft = InitPoint(GuiArray[i].PositionX, GuiArray[i].PositionY + GuiArray[i].SizeY);
-            SDL_Point bottomRight = InitPoint(GuiArray[i].PositionX + GuiArray[i].SizeX, GuiArray[i].PositionY + GuiArray[i].SizeY);
-
-            DrawLine(topLeft.x, topLeft.y + borderNum, topRight.x, topRight.y + borderNum, color); /* Top line */
-            DrawLine(topLeft.x + borderNum, topLeft.y, bottomLeft.x + borderNum, bottomLeft.y, color); /* Left line */
-            DrawLine(bottomRight.x, bottomRight.y - borderNum, bottomLeft.x, bottomRight.y - borderNum, color); /* Bottom line */
-            DrawLine(bottomRight.x - borderNum, bottomRight.y, topRight.x - borderNum, topRight.y,color); /* Right line */
+            HandleGUI(i);
+            DrawGUI(i);
         }
     }
 }
@@ -466,7 +493,9 @@ int InitLayer(SDL_Renderer *renderer, SDL_Window *window) {
     Font = TTF_OpenFont("arial.ttf", 16);
 
     if (!Font) {
-        printf("[PUIUS GUI]: Failed to load default font. Does arial.ttf exist in the running directory?");
+        printf("[PUIUS GUI] Failed to load default font. Does arial.ttf exist in the running directory?");
+
+        exit(1);
     }
 
     return true;
@@ -476,7 +505,7 @@ int ChangeDefaultFont(char *fontName, int fontSize) {
     Font = TTF_OpenFont(fontName, fontSize);
 
     if (!Font) {
-        printf("[PUIUS GUI]: Failed to change font. Did you specify the right directory?");
+        printf("[PUIUS GUI] Failed to change font. Did you specify the right directory?");
 
         return false;
     }
