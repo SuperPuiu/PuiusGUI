@@ -52,6 +52,9 @@ struct GuiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
 
+  int Parent;
+  int Zindex;
+
   int BorderSize;
   int OutlineSize;
   bool Visible;
