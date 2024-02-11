@@ -132,10 +132,6 @@ void DrawTextureEx(struct GuiProperties rectangle) {
     }
 }
 
-void DrawCursor() {
-
-}
-
 void WriteToTextBox(char *str) {
     if(IsFocused == false) {
         return;
@@ -469,14 +465,21 @@ int InitLayer(SDL_Renderer *renderer, SDL_Window *window) {
 
     Font = TTF_OpenFont("arial.ttf", 16);
 
+    if (!Font) {
+        printf("[PUIUS GUI]: Failed to load default font. Does arial.ttf exist in the running directory?");
+    }
+
     return true;
 }
 
 int ChangeDefaultFont(char *fontName, int fontSize) {
     Font = TTF_OpenFont(fontName, fontSize);
 
-    if (!Font)
+    if (!Font) {
+        printf("[PUIUS GUI]: Failed to change font. Did you specify the right directory?");
+
         return false;
+    }
     return true;
 }
 
