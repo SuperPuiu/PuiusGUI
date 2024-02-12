@@ -58,8 +58,8 @@ SDL_Point InitPoint(int x, int y) {
     return point;
 }
 
-int CollosionRectPoint(struct GuiProperties rect, int pointX, int pointY) {
-    if (pointX > rect.PositionX && pointX < rect.PositionX + rect.SizeX && pointY > rect.PositionY && pointY < rect.PositionY + rect.SizeY)
+int CollosionRectPoint(struct GuiProperties Rect, int PointX, int PointY) {
+    if (PointX > Rect.PositionX && PointX < Rect.PositionX + Rect.SizeX && PointY > Rect.PositionY && PointY < Rect.PositionY + Rect.SizeY)
             return true;
         return false;
 }
@@ -111,21 +111,33 @@ void DrawText(struct GuiProperties gui) {
     }
 }
 
-void DrawTextureEx(struct GuiProperties rectangle) {
+void DrawTextureEx(struct GuiProperties Rectangle) {
     if (globalRenderer) {
-        SDL_Color oldColor = {0, 0, 0, 0};
-        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
+        SDL_Color OldColor = {0, 0, 0, 0};
+        SDL_GetRenderDrawColor(globalRenderer, &OldColor.r, &OldColor.g, &OldColor.b, &OldColor.a);
 
-        SDL_Rect newRect = {
-            rectangle.PositionX,
-            rectangle.PositionY,
-            rectangle.SizeX,
-            rectangle.SizeY
+        int Texture_x;
+        int Texture_y;
+
+        SDL_QueryTexture(Rectangle.Image, NULL, NULL, &Texture_x, &Texture_y);
+
+        SDL_Rect NewRect = {
+            Rectangle.PositionX,
+            Rectangle.PositionY,
+            Rectangle.SizeX,
+            Rectangle.SizeY
         };
 
-        SDL_SetRenderDrawColor(globalRenderer, rectangle.BackgroundColor.R, rectangle.BackgroundColor.G, rectangle.BackgroundColor.B, rectangle.BackgroundColor.A);
-        SDL_RenderCopyEx(globalRenderer, rectangle.Image, NULL, &newRect, 0, NULL, SDL_FLIP_NONE);
-        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
+        SDL_Rect Part = {
+            0,
+            0,
+            Texture_x,
+            Texture_y
+        };
+
+        SDL_SetRenderDrawColor(globalRenderer, Rectangle.BackgroundColor.R, Rectangle.BackgroundColor.G, Rectangle.BackgroundColor.B, Rectangle.BackgroundColor.A);
+        SDL_RenderCopyEx(globalRenderer, Rectangle.Image, &Part, &NewRect, 0, NULL, SDL_FLIP_NONE);
+        SDL_SetRenderDrawColor(globalRenderer, OldColor.r, OldColor.g, OldColor.b, OldColor.a);
 
      } else {
          printf("[PUIUS GUI] Tried drawing a texture without initializing globalRenderer.\n (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)");
@@ -133,9 +145,11 @@ void DrawTextureEx(struct GuiProperties rectangle) {
 }
 
 void WriteToTextBox(char *str) {
-    if(IsFocused == false) {
+    if(IsFocused == false)
         return;
-    }
+
+    if(GuiArray[CurrentGUI_Focused].TextEditable == false)
+        return;
     // printf("%i\n", Cursor);
 
     int textLength = strlen(GuiArray[CurrentGUI_Focused].Text);
@@ -240,8 +254,6 @@ void ProcessInput() {
 }
 
 void UpdateGUI(int GUI_Index) {
-    printf("ID: %i Zindex: %i\n", GUI_Index, GuiArray[GUI_Index].Zindex);
-
     if (GuiArray[GUI_Index].Parent > -1 && GuiArray[GUI_Index].Parent < LastGUI_item) {
         int Parent = GuiArray[GUI_Index].Parent;
 
@@ -304,45 +316,50 @@ void UpdateAllGUI() {
     }
 }
 
-void HandleGUI(int currentGUI) {
-    int isColliding = CollosionRectPoint(GuiArray[currentGUI], MouseX, MouseY);
+void HandleGUI(int CurrentGUI) {
+    int isColliding = CollosionRectPoint(GuiArray[CurrentGUI], MouseX, MouseY);
 
-    if ((isColliding && GuiArray[currentGUI].Type == TEXTBUTTON) || (isColliding && GuiArray[currentGUI].Type == IMAGEBUTTON) || (isColliding && GuiArray[currentGUI].Type == TEXTBOX)) {
-        if (GuiArray[currentGUI].Hovered == false)
-            GuiArray[currentGUI].MouseLeave(currentGUI);
+    if (GuiArray[CurrentGUI_Focused].TextEditable == false) {
+        IsFocused = false;
+        CurrentGUI_Focused = -1;
+    }
 
-        GuiArray[currentGUI].Hovered = true;
+    if ((isColliding && GuiArray[CurrentGUI].Type == TEXTBUTTON) || (isColliding && GuiArray[CurrentGUI].Type == IMAGEBUTTON) || (isColliding && GuiArray[CurrentGUI].Type == TEXTBOX)) {
+        if (GuiArray[CurrentGUI].Hovered == false)
+            GuiArray[CurrentGUI].MouseLeave(CurrentGUI);
+
+        GuiArray[CurrentGUI].Hovered = true;
 
         if (LeftButtonDown) {
             /* Trigger MouseDown callback */
-            if (GuiArray[currentGUI].Pressed == false)
-                GuiArray[currentGUI].MouseDown(currentGUI);
+            if (GuiArray[CurrentGUI].Pressed == false)
+                GuiArray[CurrentGUI].MouseDown(CurrentGUI);
 
             /* Change Property */
-            GuiArray[currentGUI].Pressed = true;
-            Cursor = strlen(GuiArray[currentGUI].Text);
+            GuiArray[CurrentGUI].Pressed = true;
+            Cursor = strlen(GuiArray[CurrentGUI].Text);
 
-            if (IsFocused && GuiArray[currentGUI].Type == TEXTBOX) {
-                CurrentGUI_Focused = currentGUI;
+            if (IsFocused && GuiArray[CurrentGUI].Type == TEXTBOX) {
+                CurrentGUI_Focused = CurrentGUI;
             } else if (!IsFocused) {
                 SDL_StartTextInput();
 
-                CurrentGUI_Focused = currentGUI;
+                CurrentGUI_Focused = CurrentGUI;
                 IsFocused = true;
-                GuiArray[currentGUI].Focused = true;
+                GuiArray[CurrentGUI].Focused = true;
             }
 
         }
         else {
-            GuiArray[currentGUI].Pressed = false;
+            GuiArray[CurrentGUI].Pressed = false;
         }
     }
-    else if ((!isColliding && GuiArray[currentGUI].Type == TEXTBUTTON) || (!isColliding && GuiArray[currentGUI].Type == IMAGEBUTTON) || (!isColliding && GuiArray[currentGUI].Type == TEXTBOX)) {
-        if (GuiArray[currentGUI].Hovered == true)
-            GuiArray[currentGUI].MouseEnter(currentGUI);
+    else if ((!isColliding && GuiArray[CurrentGUI].Type == TEXTBUTTON) || (!isColliding && GuiArray[CurrentGUI].Type == IMAGEBUTTON) || (!isColliding && GuiArray[CurrentGUI].Type == TEXTBOX)) {
+        if (GuiArray[CurrentGUI].Hovered == true)
+            GuiArray[CurrentGUI].MouseEnter(CurrentGUI);
 
-        GuiArray[currentGUI].Hovered = false;
-        GuiArray[currentGUI].Pressed = false;
+        GuiArray[CurrentGUI].Hovered = false;
+        GuiArray[CurrentGUI].Pressed = false;
     }
 }
 
