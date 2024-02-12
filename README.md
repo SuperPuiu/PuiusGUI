@@ -1,18 +1,13 @@
 # PuiusGUI
-This project aims to give an easy to use, single file GUI library to use along with SDL2.
+This project aims to give an easy to use, single file GUI library for SDL2.
 
-Contains:
-- GUI Callbacks support;
-- GUI Text Alignment;
-- GUI Adjustable text properties;
-- Important GUI functions.
+The header contains multiple functions that you can use, but most important is `InitLayer`, `ConstructGUI` and `UpdateAllGUI`. Additionaly, there are variables such as `IsFocused`, `LastGUI_item` and `CurrentGUI_Focused`. If you need more information, consider checking the documentation.
 
-The header contains multiple functions that you can use, but most important is `initLayer`, `ConstructGUI` and `updateAllGUI`. Additionaly, there are variables such as `isFocused`, `lastGUI_item` and `currentGUI_Focused`.
+# Examples
+The library contains one example which is used to test most of the PuiusGUI functionality. It is important to note that it can be easily built by using `make`. test.c can be found in the `src/tests`.
 
 # Building
 To build, PuiusGUI.c requires SDL.h and SDL_image.h and SDL_ttf.h.
-
-If you have the required libraries installed, use `make buildTest` or simply `make` to build test.c
 
 use `make buildSO` and `make install` to build and respectively install the library.
 Alternatively, use the cmake file provided.
