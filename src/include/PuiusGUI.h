@@ -27,6 +27,7 @@ enum GUI_TYPE {
     TEXTBUTTON,
     IMAGELABEL,
     IMAGEBUTTON,
+    UILIST, /* Used for automatic placement of GUI elements in a parent. */
 };
 
 enum TEXT_XALIGNMENT {
@@ -48,6 +49,17 @@ struct Color3 {
   int A;
 };
 
+/* Pre-made Color3 structures */
+
+extern struct Color3 WHITE;
+extern struct Color3 BLACK;
+extern struct Color3 RED;
+extern struct Color3 BLUE;
+extern struct Color3 LIME;
+extern struct Color3 GRAY;
+extern struct Color3 VIOLET;
+
+/* Pre-made Color3 structures */
 struct GuiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
