@@ -19,21 +19,27 @@ The project is licensed under MIT license. SDL_image.h, SDL.h and SDL_ttf.h are 
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
+#include <stdbool.h>
+
 enum GUI_TYPE {
     TEXTLABEL,
     TEXTBOX,
     TEXTBUTTON,
     IMAGELABEL,
     IMAGEBUTTON,
+    UILIST, /* Used for automatic placement of GUI elements in a parent. */
 };
 
-enum TEXT_ALIGMENT {
-    TOP,
-    BOTTOM,
+enum TEXT_XALIGNMENT {
     X_CENTER,
-    Y_CENTER,
     LEFT,
     RIGHT,
+};
+
+enum TEXT_YALIGNMENT {
+    TOP,
+    Y_CENTER,
+    BOTTOM,
 };
 
 struct Color3 {
@@ -43,80 +49,85 @@ struct Color3 {
   int A;
 };
 
-struct guiProperties {
+/* Pre-made Color3 structures */
+
+extern struct Color3 WHITE;
+extern struct Color3 BLACK;
+extern struct Color3 RED;
+extern struct Color3 BLUE;
+extern struct Color3 LIME;
+extern struct Color3 GRAY;
+extern struct Color3 VIOLET;
+
+/* Pre-made Color3 structures */
+struct GuiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
-  int Visible;
+  
+  int Parent;
+  int Zindex;
 
-  int OutlineSize;
   int BorderSize;
-  int TextSize;
-  int TextScaled;
-
-  int TextFits;
-  int TextWrapped;
-  SDL_Rect TextRectangle;
-  TTF_Font *Font;
+  int OutlineSize;
+  bool Visible;
 
   struct Color3 BorderColor;
   struct Color3 BackgroundColor;
   struct Color3 TextColor;
+  struct Color3 BorderColor;
 
   SDL_Texture *Image;
 
   enum GUI_TYPE Type;
+  enum TEXT_XALIGNMENT TextXAlignment;
+  enum TEXT_YALIGNMENT TextYAlignment;
+
+  bool Pressed;
+  bool Active;
+  bool Hovered;
+  bool TextEditable;
+  bool Focused;
+
+  bool TextFits;
+  bool TextScaled;
+  bool TextWrapped;
+  int TextSize;
+  
   enum TEXT_ALIGMENT TextXAlignment;
   enum TEXT_ALIGMENT TextYAlignment;
 
-  int Pressed;
-  int Active;
-  int Hovered;
-  int TextEditable;
-  int Focused;
+  void (*MouseDown)(int GuiIndex);
+  void (*MouseEnter)(int GuiIndex);
+  void (*MouseLeave)(int GuiIndex);
+  void (*FocusLost)(int GuiIndex);
 
-  void (*MouseDown)(int guiIndex);
-  void (*MouseEnter)(int guiIndex);
-  void (*MouseLeave)(int guiIndex);
-  void (*FocusLost)(int guiIndex);
+  TTF_Font *Font;
 
-  SDL_Rect rect;
+  SDL_Rect TextRectangle;
   SDL_Texture *TextureText;
   char *Text;
 };
 
-struct inputStruct {
-  int A; int N;
-  int B; int O;
-  int C; int P;
-  int D; int Q;
-  int E; int R;
-  int F; int S;
-  int G; int T;
-  int H; int U;
-  int I; int V;
-  int J; int W;
-  int K; int X;
-  int L; int Y;
-  int M; int Z;
+void DrawRectangleRec(struct GuiProperties rectangle);
 
-  int ESC; int SDL_QUIT;
-  int LEFT_BUTTON; int RIGHT_BUTTON;
-};
+int InitLayer(SDL_Renderer *renderer, SDL_Window *window);
+int ChangeDefaultFont(char *FontName, int FontSize);
+void UninitLayer();
 
-void DrawRectangleRec(struct guiProperties rectangle);
-int initLayer(SDL_Renderer *renderer, SDL_Window *window);
-void uninitLayer();
-void processInput(struct inputStruct *keys);
+void ProcessInput();
 
-struct Color3 initColor3(int R, int G, int B, int A);
+struct Color3 InitColor3(int R, int G, int B, int A);
 
-// GUI related
-int ConstructGUI(enum GUI_TYPE);
-void renderGUI();
-void updateGUI(int GUI_Index);
-void updateAllGUI();
+int ConstructGUI(enum GUI_TYPE, int X, int Y);
+void RenderGUI();
+void UpdateGUI(int GUI_Index);
+void UpdateAllGUI();
 
-extern struct guiProperties guiArray[100];
-extern int lastGUI_item;
+extern struct GuiProperties GuiArray[100];
+extern int LastGUI_item;
+extern int IsFocused;
+extern int CurrentGUI_Focused;
+extern int Inputs[258];
+extern int Running;
 
 #endif
