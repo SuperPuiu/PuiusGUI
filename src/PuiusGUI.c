@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "include/PuiusGUI.h"
+#include "PuiusGUI.h"
 
 /* Color3s */
 struct Color3 WHITE;

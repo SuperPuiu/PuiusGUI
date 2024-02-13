@@ -63,7 +63,7 @@ extern struct Color3 VIOLET;
 struct GuiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
-
+  
   int Parent;
   int Zindex;
 
@@ -71,6 +71,7 @@ struct GuiProperties {
   int OutlineSize;
   bool Visible;
 
+  struct Color3 BorderColor;
   struct Color3 BackgroundColor;
   struct Color3 TextColor;
   struct Color3 BorderColor;
@@ -91,6 +92,9 @@ struct GuiProperties {
   bool TextScaled;
   bool TextWrapped;
   int TextSize;
+  
+  enum TEXT_ALIGMENT TextXAlignment;
+  enum TEXT_ALIGMENT TextYAlignment;
 
   void (*MouseDown)(int GuiIndex);
   void (*MouseEnter)(int GuiIndex);
