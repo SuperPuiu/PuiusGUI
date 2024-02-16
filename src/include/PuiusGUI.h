@@ -63,15 +63,15 @@ extern struct Color3 VIOLET;
 struct GuiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
-  
+
   int Parent;
   int Zindex;
+  int BodyIndex;
 
   int BorderSize;
   int OutlineSize;
   bool Visible;
 
-  struct Color3 BorderColor;
   struct Color3 BackgroundColor;
   struct Color3 TextColor;
   struct Color3 BorderColor;
@@ -92,9 +92,6 @@ struct GuiProperties {
   bool TextScaled;
   bool TextWrapped;
   int TextSize;
-  
-  enum TEXT_ALIGMENT TextXAlignment;
-  enum TEXT_ALIGMENT TextYAlignment;
 
   void (*MouseDown)(int GuiIndex);
   void (*MouseEnter)(int GuiIndex);
@@ -108,7 +105,7 @@ struct GuiProperties {
   char *Text;
 };
 
-void DrawRectangleRec(struct GuiProperties rectangle);
+void DrawRectangleRec(struct GuiProperties *GUI);
 
 int InitLayer(SDL_Renderer *renderer, SDL_Window *window);
 int ChangeDefaultFont(char *FontName, int FontSize);
@@ -118,16 +115,16 @@ void ProcessInput();
 
 struct Color3 InitColor3(int R, int G, int B, int A);
 
-int ConstructGUI(enum GUI_TYPE, int X, int Y);
+struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y);
 void RenderGUI();
 void UpdateGUI(int GUI_Index);
 void UpdateAllGUI();
 
-extern struct GuiProperties GuiArray[100];
+extern struct GuiProperties *GuiArray[100];
 extern int LastGUI_item;
 extern int IsFocused;
 extern int CurrentGUI_Focused;
-extern int Inputs[258];
+extern bool Inputs[258];
 extern int Running;
 
 #endif
