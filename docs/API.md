@@ -41,7 +41,8 @@ A `SDL_Rect` structure used by the library for different operations and text ren
 ### Font `TTF_Font`
 A `TTF_Font` value used by SDL_ttf for storing fonts. The font is automatically assigned by the constructor when built. Alternatively, it can be changed manually if needed.
 
-### Text
+### Text `char *`
+A `char*` (string) used by `TextLabel` and `TextBox` for rendering text. It should be noted that `TextBox` has text `malloc()`ed when constructed and `TextLabel` isn't.
 
 ## Color3 Properties
 ### BackgroundColor `Color3`
@@ -53,7 +54,7 @@ The `Color3` struct used to specify the color of the element's border. Some elem
 ## Image Property `SDL_Texture`
 The image property is used by `ImageButton` and `ImageLabel` to render text. The property has to be manually assigned once the struct has been created. Not assigning the property and rendering the element will result in nothing being displayed.
 ## Enum Properties
-### Type `Type` `READ ONLY`
+### Type `GUI_TYPE` `READ ONLY`
 An `enum` used by the library to adjust different properties, and to generate different behaviour. After constructing the element, you should not change it to something else.
 The `Type` property can have the following values:
 
@@ -69,33 +70,72 @@ The `Type` property can have the following values:
 
 `UILIST` - Used for constructing lists. When parented to anything than -1, it will position everything under the same parent in a list.
 ### TextXAlignment `TextXAlignment`
-An `enum` used by the library to automatically position the X coordinate of the text. Setting it to anything but the accepted enums will result in undefined behaviour.
-### TextYAlignment `TextYAlignment`
+An `enum` used by the library to automatically position the X coordinate of the text. Setting it to anything but the accepted enums will result in undefined behaviour. `TextWrapped` may modify it.
+The accepted enums are the following:
+`X_CENTER` - Used to center the text on the X coordinate.
 
+`LEFT` - Used to position to the left on the X coordinate.
+
+`RIGHT` - Used to position to the right on the X coordinate.
+### TextYAlignment `TextYAlignment`
+An `enum` used by the library to automatically position the Y coordinate of the text. Setting it to anything but the accepted enums will result in undefined behaviour. `TextWrapped` may modify it.
+The accepted enums are the following:
+`Y_CENTER` - Used to center the text on the Y coordinate.
+
+`TOP` - Used to position to the top on the Y coordinate.
+
+`BOTTOM` - Used to position to the bottom on the Y coordinate.
 ## Callback Properties
 ### MouseDown `Function pointer`
-
+A function called by the library whenever the user clicks on the GUI element, one of the arguments being the index of the GUI.
 ### MouseEnter `Function pointer`
-
+A function called by the library whenever the cursor hovers over the element, one of the arguments being the index of the GUI.
 ### MouseLeave `Function pointer`
-
+A function called by the library whenever the cursor leaves the element, one of the arguments being the index of the GUI.
 ### FocusLost `Function pointer`
-
+A function called by the library whenever the user just finished editing the textbox, one of the arguments being the index of the GUI.
 # Functions
 ## General Functions
+### InitLayer(SDL_Renderer *renderer, SDL_Window *window) `int Function`
+A core function used to initialize the library. The init function loads `arial.ttf`, ensure that `globalRenderer`,`globalWindow` and default `Color3` structs are initialized.
+
+### UninitLayer() `void Function`
+A core function used to automatically free allocated **textboxes**'s text and other elements' `TextureText` variables.
+
+### RenderGUI() `void Function`
+A core function used to render GUI buttons. Should be called after `SDL_RenderClear()`.
+
+### UpdateGUI(int GUI_Index) `void Function`
+An important function used to automatically update an element whose index is specified in the first argument.
+
+### UpdateAllGUI() `void Function`
+A function used to update all buttons at once. This function uses a for loop which begins from 0 to `LastGUI_Item`, calling `UpdateGUI`.
+
+### ChangeDefaultFont(char *FontName, int FontSize) `int Function`
+A function used to change the default font. `*FontName` should be a pointer to the location of the file.
 
 ## Constructors
+### ConstructGUI(enum GUI_TYPE, int PositionX, int PositionY) `int Function`
+A core function which constructs a new GUI element based on the given enum and positions. See `Type` values for more information.
+
+### InitColor3(int R, int G, int B, int A) `struct Color3 Function`
+Function used to construct more easily `Color3` structs. It returns a structure, and accepts 4 arguments.
 
 # Header extern values
-## GuiArray `struct GuiProperties`
+### GuiArray `struct GuiProperties`
+A core structure used by the library to store and render GUI items. Can be used to modify a GUI element's properties using the index provided by `ConstructGUI()`.
 
-## LastGUI_Item `int`
+### LastGUI_Item `int` `READ ONLY`
+An int value which contains the last index of the `GuiArray`. Changing it may result in undefined behaviour.
 
-## IsFocused `bool`
+### IsFocused `bool`
+A bool value set by the library whenever the user is editing a textbox or not.
 
-## CurrentGUI_Focused `int`
+### CurrentGUI_Focused `int`
+An int set by the library whenever the user is editing a textbox. Do not rely on it to check if the user is typing or not, and instead use `IsFocused`.
 
-## Inputs `int*`
+### Inputs `bool*`
+A bool array used by `ProcessInput()` function to store pressed keys and other important inputs.
 
-## Running `int` `READ ONLY`
+### Running `int`
 Used by the `ProcessInputs()` function. The value is set to 0 whenever the `SDL_QUIT` event is encountered. Should be used for creating the game's loop.
