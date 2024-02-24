@@ -80,9 +80,7 @@ int CollosionRectPoint(struct GuiProperties *GUI, int PointX, int PointY) {
 }
 
 void GUI_INTERNAL_ERROR(const char *error) {
-    printf("\x1b[31m");
-    printf("%s", error);
-    printf("\x1b[0m");
+    printf("\x1b[31m %s \x1b[0m", error);
 }
 
 void DrawRectangleRec(struct GuiProperties *GUI) {
@@ -198,6 +196,14 @@ void WriteToTextBox(char *str) {
     }
 
     if (strcmp(str, "ENTER") == 0) {
+        if (GUI->MultiLine == true) {
+            GuiArray[CurrentGUI_Focused]->FocusLost(CurrentGUI_Focused);
+            IsFocused = false;
+            CurrentGUI_Focused = -1;
+
+            return;
+        }
+
         for (int i = 0; i <= strlen(alloc); i++) {
             if (i == Cursor) {
                 alloc[i] = '\n';
@@ -255,6 +261,15 @@ void ProcessInput() {
                     WriteToTextBox("ENTER");
                 else if (event.key.keysym.sym == SDLK_BACKSPACE)
                     WriteToTextBox("BACKSPACE");
+                else if (event.key.keysym.sym == SDLK_LEFT && IsFocused) {
+                    if (Cursor >= 1)
+                        Cursor--;
+                }
+                else if (event.key.keysym.sym == SDLK_RIGHT && IsFocused) {
+                    if (Cursor < strlen(GuiArray[CurrentGUI_Focused]->Text))
+                        Cursor++;
+                }
+
                 Inputs[event.key.keysym.scancode] = true;
                 break;
             case SDL_KEYUP:
@@ -437,6 +452,7 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
         newGUI->TextWrapped = false;
         newGUI->TextFits = true;
         newGUI->TextScaled = false;
+        newGUI->MultiLine = false;
 
         newGUI->TextColor = TextColor;
         newGUI->BackgroundColor = BackgroundColor;
@@ -493,7 +509,36 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
 }
 
 void DrawCursor() {
+    int CursorX, CursorY;
+    char *alloc = (char*)malloc(Cursor * sizeof(char) + 1);
+    struct GuiProperties GUI = *GuiArray[CurrentGUI_Focused];
 
+    for (int i = 0; i < Cursor; i++) {
+        if (GUI.Text[i] == '\n') {
+            CursorX = 0;
+            CursorY += 1;
+        }
+
+        CursorX++;
+
+        if (GUI.Text[i] != '\n')
+            strncpy(alloc, &GUI.Text[i], 1);
+        else
+            strncpy(alloc, " ", 2);
+    }
+
+    alloc[Cursor] = '\0';
+
+    int TextWidth, TextHeight;
+
+    TTF_SizeUTF8(GUI.Font, alloc, &TextWidth, &TextHeight);
+    CursorX = (CursorX * TextWidth) + GUI.TextRectangle.x;
+    CursorY = CursorY * GUI.TextSize + GUI.TextRectangle.y;
+
+    // printf("CursorX: %i, CursorY: %i, TextWidth: %i, TextHeight: %i, Text used for calculation: %s\n", CursorX, CursorY, TextWidth, TextHeight, alloc);
+
+    DrawLine(CursorX, CursorY, CursorX, CursorY + 10, WHITE);
+    free(alloc);
 }
 
 void DrawGUI(int i) {
@@ -524,6 +569,9 @@ void DrawGUI(int i) {
         DrawLine(bottomRight.x, bottomRight.y - borderNum, bottomLeft.x, bottomRight.y - borderNum, color); /* Bottom line */
         DrawLine(bottomRight.x - borderNum, bottomRight.y, topRight.x - borderNum, topRight.y,color); /* Right line */
     }
+
+    if (IsFocused == true)
+        DrawCursor();
 }
 
 void RenderGUI() {
