@@ -88,6 +88,7 @@ struct GuiProperties {
   bool TextEditable;
   bool Focused;
 
+  bool MultiLine;
   bool TextFits;
   bool TextScaled;
   bool TextWrapped;
