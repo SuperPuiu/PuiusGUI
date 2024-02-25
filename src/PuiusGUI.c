@@ -509,7 +509,9 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
 }
 
 void DrawCursor() {
-    int CursorX = 0, CursorY = 1;
+    int CursorY = 1;
+    static int LastCursorY = 1;
+
     char *alloc = (char*)malloc(Cursor * sizeof(char) + 1);
     alloc[0] = '\0';
     struct GuiProperties GUI = *GuiArray[CurrentGUI_Focused];
@@ -521,11 +523,8 @@ void DrawCursor() {
             alloc[0] = 0;
             alloc[1] = '\0';
 
-            CursorX = 0;
             CursorY += 1;
         }
-
-        CursorX++;
 
         if (GUI.Text[i] != '\n')
             strncat(alloc, &GUI.Text[i], 1);
@@ -536,12 +535,15 @@ void DrawCursor() {
     int TextWidth, TextHeight;
 
     TTF_SizeUTF8(GUI.Font, alloc, &TextWidth, &TextHeight);
-    CursorX = (CursorX * TextWidth) + GUI.TextRectangle.x;
-    CursorY = CursorY * GUI.TextSize + GUI.TextRectangle.y;
+    int CursorX = TextWidth + GUI.TextRectangle.x;
+    CursorY = (CursorY * GUI.TextSize + GUI.TextRectangle.y) + CursorY * 3;
 
-    // printf("CursorX: %i, CursorY: %i, TextWidth: %i, TextHeight: %i\n", CursorX, CursorY, TextWidth, TextHeight);
+    if (LastCursorY != CursorY) {
+        printf("CursorY: %i\n", CursorY);
+        LastCursorY = CursorY;
+    }
 
-    DrawLine(CursorX, CursorY, CursorX, CursorY + GUI.TextSize, WHITE);
+    DrawLine(CursorX, CursorY - GUI.TextSize / 2, CursorX, CursorY + GUI.TextSize / 2, WHITE);
     free(alloc);
 }
 
