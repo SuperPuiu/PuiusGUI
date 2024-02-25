@@ -509,7 +509,7 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
 }
 
 void DrawCursor() {
-    int CursorX, CursorY = 1;
+    int CursorX = 0, CursorY = 1;
     char *alloc = (char*)malloc(Cursor * sizeof(char) + 1);
     alloc[0] = '\0';
     struct GuiProperties GUI = *GuiArray[CurrentGUI_Focused];
