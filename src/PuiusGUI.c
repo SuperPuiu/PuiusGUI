@@ -511,13 +511,16 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
 void DrawCursor() {
     int CursorX, CursorY = 1;
     char *alloc = (char*)malloc(Cursor * sizeof(char) + 1);
-    alloc[Cursor] = '\0';
+    alloc[0] = '\0';
     struct GuiProperties GUI = *GuiArray[CurrentGUI_Focused];
 
     char s = ' ';
 
     for (int i = 0; i < Cursor; i++) {
         if (GUI.Text[i] == '\n') {
+            alloc[0] = 0;
+            alloc[1] = '\0';
+
             CursorX = 0;
             CursorY += 1;
         }
@@ -536,10 +539,9 @@ void DrawCursor() {
     CursorX = (CursorX * TextWidth) + GUI.TextRectangle.x;
     CursorY = CursorY * GUI.TextSize + GUI.TextRectangle.y;
 
-    printf("Text: %s\n", alloc);
-    printf("CursorX: %i, CursorY: %i, TextWidth: %i, TextHeight: %i\n", CursorX, CursorY, TextWidth, TextHeight);
+    // printf("CursorX: %i, CursorY: %i, TextWidth: %i, TextHeight: %i\n", CursorX, CursorY, TextWidth, TextHeight);
 
-    DrawLine(CursorX, CursorY, CursorX, CursorY + 10, WHITE);
+    DrawLine(CursorX, CursorY, CursorX, CursorY + GUI.TextSize, WHITE);
     free(alloc);
 }
 
