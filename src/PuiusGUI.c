@@ -514,7 +514,6 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
 
 void DrawCursor() {
     int CursorY = 1;
-    static int LastCursorY = 1;
 
     int TextWidth, TextHeight;
 
@@ -543,11 +542,6 @@ void DrawCursor() {
         CursorX -= 4;
 
     CursorY = CursorY * TextHeight + GUI.TextRectangle.y;
-
-    if (CursorY != LastCursorY) {
-        printf("CursorX: %i, CursorY: %i, TextWidth: %i, TextHeight: %i\n", CursorX, CursorY, TextWidth, TextHeight);
-        LastCursorY = CursorY;
-    }
 
     DrawLine(CursorX, CursorY, CursorX, CursorY - TextHeight, InitColor3(255 - GUI.BackgroundColor.R, 255 - GUI.BackgroundColor.G, 255 - GUI.BackgroundColor.B, GUI.BackgroundColor.A));
     free(alloc);
