@@ -80,7 +80,7 @@ int CollosionRectPoint(struct GuiProperties *GUI, int PointX, int PointY) {
 }
 
 void GUI_INTERNAL_ERROR(const char *error) {
-    printf("\x1b[31m %s \x1b[0m", error);
+    printf("\x1b[31m%s\x1b[0m", error);
 }
 
 void DrawRectangleRec(struct GuiProperties *GUI) {
@@ -305,12 +305,14 @@ void ProcessInput() {
 }
 
 void UpdateGUI(int GUI_Index) {
+    /* Variables */
     int success = 1;
     struct GuiProperties GUI = *GuiArray[GUI_Index];
 
-    if (!GUI.Font)
-        GUI_INTERNAL_ERROR("[PUIUS GUI] GuiArray[GUI_Index].Font is inexistent!\n");
+    SDL_Color Color = {GUI.TextColor.R, GUI.TextColor.G, GUI.TextColor.B, GUI.TextColor.A};
+    SDL_Surface *surfaceMessage;
 
+    /* Positioning */
     if (GUI.Parent > -1 && GUI.Parent < LastGUI_item) {
         int Parent = GUI.Parent;
 
@@ -318,14 +320,15 @@ void UpdateGUI(int GUI_Index) {
         GuiArray[GUI_Index]->PositionY = GUI.PositionY + GuiArray[Parent]->PositionY;
     }
 
-    SDL_Color Color = {GUI.TextColor.R, GUI.TextColor.G, GUI.TextColor.B};
+    /* Font related */
+    if (!GUI.Font)
+        GUI_INTERNAL_ERROR("[PUIUS GUI] GuiArray[GUI_Index].Font is inexistent!\n");
 
     success = TTF_SetFontSize(GuiArray[GUI_Index]->Font, GUI.TextSize);
     if (success == -1)
         GUI_INTERNAL_ERROR("[PUIUS GUI] TTF_SetFontSize failed.\n");
 
     TTF_SetFontOutline(GuiArray[GUI_Index]->Font, GuiArray[GUI_Index]->OutlineSize);
-    SDL_Surface *surfaceMessage;
 
     if (GUI.TextWrapped)
         surfaceMessage = TTF_RenderText_Blended_Wrapped(GUI.Font, GUI.Text, Color, GUI.SizeX);
@@ -333,10 +336,9 @@ void UpdateGUI(int GUI_Index) {
         surfaceMessage = TTF_RenderText_Blended_Wrapped(GUI.Font, GUI.Text, Color, 0);
 
     SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
-
     SDL_GetClipRect(surfaceMessage, &GuiArray[GUI_Index]->TextRectangle);
-    /* Calculate the position based on gui's enums */
 
+    /* Calculate the position based on gui's enums */
     if (GUI.TextXAlignment == LEFT) {
         GuiArray[GUI_Index]->TextRectangle.x = GuiArray[GUI_Index]->PositionX;
     } else if (GUI.TextXAlignment == RIGHT) {
@@ -353,6 +355,7 @@ void UpdateGUI(int GUI_Index) {
         GuiArray[GUI_Index]->TextRectangle.y = (GuiArray[GUI_Index]->PositionY + GuiArray[GUI_Index]->SizeY) - GuiArray[GUI_Index]->TextRectangle.h;
     }
 
+    /* TextFits logic */
     if (GUI.TextRectangle.w > GUI.SizeX)
         GuiArray[GUI_Index]->TextFits = 0;
     else
@@ -363,14 +366,14 @@ void UpdateGUI(int GUI_Index) {
     else
         GuiArray[GUI_Index]->TextFits = 1;
 
+    /* Ending */
     GuiArray[GUI_Index]->TextureText = Message;
     SDL_FreeSurface(surfaceMessage);
 }
 
 void UpdateAllGUI() {
-    for (int i = 0; i <= LastGUI_item; i++) {
+    for (int i = 0; i <= LastGUI_item; i++)
         UpdateGUI(i);
-    }
 }
 
 void HandleGUI(int CurrentGUI) {
@@ -464,9 +467,6 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
         newGUI->FocusLost = defaultCallback;
         newGUI->MouseLeave = defaultCallbackHoverLeave;
 
-        SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Font, "Text", BLACK);
-        SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
-
         newGUI->TextRectangle.x = 0;
         newGUI->TextRectangle.y = 0;
 
@@ -474,10 +474,11 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
         newGUI->TextXAlignment = LEFT;
         newGUI->TextYAlignment = TOP;
 
-        if (GUI == TEXTLABEL) {
+        newGUI->Text = "Text";
+
+        if (GUI == TEXTLABEL)
             newGUI->TextEditable = false;
-            newGUI->Text = "Text";
-        } else if (GUI == TEXTBUTTON)
+        else if (GUI == TEXTBUTTON)
             newGUI->TextEditable = false;
         else if (GUI == TEXTBOX) {
             newGUI->TextEditable = true;
@@ -496,6 +497,9 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
         else if (GUI == IMAGELABEL)
             newGUI->TextEditable = false;
 
+        SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Font, newGUI->Text, BLACK);
+        SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
+
         newGUI->TextureText = Message;
         newGUI->Font = Font;
 
@@ -512,17 +516,17 @@ void DrawCursor() {
     int CursorY = 1;
     static int LastCursorY = 1;
 
+    int TextWidth, TextHeight;
+
     char *alloc = (char*)malloc(Cursor * sizeof(char) + 1);
     alloc[0] = '\0';
     struct GuiProperties GUI = *GuiArray[CurrentGUI_Focused];
 
-    char s = ' ';
+    char s = ' '; /* :moyai: */
 
     for (int i = 0; i < Cursor; i++) {
         if (GUI.Text[i] == '\n') {
-            alloc[0] = 0;
-            alloc[1] = '\0';
-
+            alloc[0] = '\0';
             CursorY += 1;
         }
 
@@ -532,18 +536,20 @@ void DrawCursor() {
             strncat(alloc, &s, 1);
     }
 
-    int TextWidth, TextHeight;
-
-    TTF_SizeUTF8(GUI.Font, alloc, &TextWidth, &TextHeight);
+    TTF_SizeText(GUI.Font, alloc, &TextWidth, NULL);
+    TextHeight = TTF_FontHeight(GUI.Font);
     int CursorX = TextWidth + GUI.TextRectangle.x;
-    CursorY = (CursorY * GUI.TextSize + GUI.TextRectangle.y) + CursorY * 3;
+    if (CursorY > 1)
+        CursorX -= 4;
 
-    if (LastCursorY != CursorY) {
-        printf("CursorY: %i\n", CursorY);
+    CursorY = CursorY * TextHeight + GUI.TextRectangle.y;
+
+    if (CursorY != LastCursorY) {
+        printf("CursorX: %i, CursorY: %i, TextWidth: %i, TextHeight: %i\n", CursorX, CursorY, TextWidth, TextHeight);
         LastCursorY = CursorY;
     }
 
-    DrawLine(CursorX, CursorY - GUI.TextSize / 2, CursorX, CursorY + GUI.TextSize / 2, WHITE);
+    DrawLine(CursorX, CursorY, CursorX, CursorY - TextHeight, InitColor3(255 - GUI.BackgroundColor.R, 255 - GUI.BackgroundColor.G, 255 - GUI.BackgroundColor.B, GUI.BackgroundColor.A));
     free(alloc);
 }
 
