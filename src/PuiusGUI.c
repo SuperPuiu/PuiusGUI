@@ -80,7 +80,9 @@ int CollosionRectPoint(struct GuiProperties *GUI, int PointX, int PointY) {
 }
 
 void GUI_INTERNAL_ERROR(const char *error) {
+    #ifndef SUPPRESS_GUI_ERRORS
     printf("\x1b[31m%s\x1b[0m", error);
+    #endif
 }
 
 void DrawRectangleRec(struct GuiProperties *GUI) {
@@ -191,7 +193,7 @@ void WriteToTextBox(char *str) {
     alloc = malloc(textLength * 2);
 
     if (alloc == NULL) {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to allocate memory for new string when writing to a textbox.\n");
+        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to allocate memory for new string when writing to the focused textbox.\n");
         exit(1);
     }
 
@@ -307,6 +309,7 @@ void ProcessInput() {
 void UpdateGUI(int GUI_Index) {
     /* Variables */
     int success = 1;
+    char error[100] = "empty";
     struct GuiProperties GUI = *GuiArray[GUI_Index];
 
     SDL_Color Color = {GUI.TextColor.R, GUI.TextColor.G, GUI.TextColor.B, GUI.TextColor.A};
@@ -322,11 +325,11 @@ void UpdateGUI(int GUI_Index) {
 
     /* Font related */
     if (!GUI.Font)
-        GUI_INTERNAL_ERROR("[PUIUS GUI] GuiArray[GUI_Index].Font is inexistent!\n");
+        sprintf(error, "[PUIUS GUI] GuiArray[%i].Font is inexistent!\n", GUI_Index);
 
     success = TTF_SetFontSize(GuiArray[GUI_Index]->Font, GUI.TextSize);
     if (success == -1)
-        GUI_INTERNAL_ERROR("[PUIUS GUI] TTF_SetFontSize failed.\n");
+        sprintf(error, "[PUIUS GUI] TTF_SetFontSize failed for GUI element with %i as index!\n", GUI_Index);
 
     TTF_SetFontOutline(GuiArray[GUI_Index]->Font, GuiArray[GUI_Index]->OutlineSize);
 
@@ -339,21 +342,20 @@ void UpdateGUI(int GUI_Index) {
     SDL_GetClipRect(surfaceMessage, &GuiArray[GUI_Index]->TextRectangle);
 
     /* Calculate the position based on gui's enums */
-    if (GUI.TextXAlignment == LEFT) {
+    if (GUI.TextXAlignment == LEFT)
         GuiArray[GUI_Index]->TextRectangle.x = GuiArray[GUI_Index]->PositionX;
-    } else if (GUI.TextXAlignment == RIGHT) {
+    else if (GUI.TextXAlignment == RIGHT)
         GuiArray[GUI_Index]->TextRectangle.x = (GuiArray[GUI_Index]->PositionX + GuiArray[GUI_Index]->SizeX) - GuiArray[GUI_Index]->TextRectangle.w;
-    } else if (GUI.TextXAlignment == X_CENTER) {
+    else if (GUI.TextXAlignment == X_CENTER)
         GuiArray[GUI_Index]->TextRectangle.x = (GuiArray[GUI_Index]->SizeX / 2 + GuiArray[GUI_Index]->PositionX) - GuiArray[GUI_Index]->TextRectangle.w / 2;
-    }
 
-    if (GUI.TextYAlignment == TOP) {
+    if (GUI.TextYAlignment == TOP)
         GuiArray[GUI_Index]->TextRectangle.y = GuiArray[GUI_Index]->PositionY;
-    } else if (GUI.TextYAlignment == Y_CENTER) {
+    else if (GUI.TextYAlignment == Y_CENTER)
         GuiArray[GUI_Index]->TextRectangle.y = (GuiArray[GUI_Index]->SizeY / 2 + GuiArray[GUI_Index]->PositionY) - GuiArray[GUI_Index]->TextRectangle.h / 2;
-    } else if (GUI.TextYAlignment == BOTTOM) {
+    else if (GUI.TextYAlignment == BOTTOM)
         GuiArray[GUI_Index]->TextRectangle.y = (GuiArray[GUI_Index]->PositionY + GuiArray[GUI_Index]->SizeY) - GuiArray[GUI_Index]->TextRectangle.h;
-    }
+
 
     /* TextFits logic */
     if (GUI.TextRectangle.w > GUI.SizeX)
@@ -366,6 +368,9 @@ void UpdateGUI(int GUI_Index) {
     else
         GuiArray[GUI_Index]->TextFits = 1;
 
+    if (strcmp(error, "empty") != 0)
+        GUI_INTERNAL_ERROR(error);
+
     /* Ending */
     GuiArray[GUI_Index]->TextureText = Message;
     SDL_FreeSurface(surfaceMessage);
@@ -377,6 +382,8 @@ void UpdateAllGUI() {
 }
 
 void HandleGUI(int CurrentGUI) {
+    /* TODO: Rework the function */
+
     struct GuiProperties GUI = *GuiArray[CurrentGUI];
     int isColliding = CollosionRectPoint(GuiArray[CurrentGUI], MouseX, MouseY);
 
@@ -425,11 +432,7 @@ void HandleGUI(int CurrentGUI) {
 }
 
 struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
-        SDL_Color BLACK = {0, 0, 0};
-
-        struct Color3 TextColor = InitColor3(0, 0, 0, 255);
-        struct Color3 BackgroundColor = InitColor3(255, 255, 255, 255);
-        struct Color3 BorderColor = InitColor3(0, 0, 0, 255);
+        SDL_Color SDL_BLACK = {0, 0, 0};
 
         struct GuiProperties *newGUI = malloc(sizeof(struct GuiProperties));
         LastGUI_item += 1;
@@ -457,9 +460,9 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
         newGUI->TextScaled = false;
         newGUI->MultiLine = false;
 
-        newGUI->TextColor = TextColor;
-        newGUI->BackgroundColor = BackgroundColor;
-        newGUI->BorderColor = BorderColor;
+        newGUI->TextColor = BLACK;
+        newGUI->BackgroundColor = WHITE;
+        newGUI->BorderColor = BLACK;
 
         /* Ensure that no pointer is left which could trigger an error */
         newGUI->MouseEnter = defaultCallbackHover;
@@ -497,7 +500,7 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
         else if (GUI == IMAGELABEL)
             newGUI->TextEditable = false;
 
-        SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Font, newGUI->Text, BLACK);
+        SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Font, newGUI->Text, SDL_BLACK);
         SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
 
         newGUI->TextureText = Message;
@@ -513,11 +516,13 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
 }
 
 void DrawCursor() {
-    int CursorY = 1;
+    if (GuiArray[CurrentGUI_Focused]->TextEditable == false)
+        return;
 
+    int CursorY = 1;
     int TextWidth, TextHeight;
 
-    char *alloc = (char*)malloc(Cursor * sizeof(char) + 1);
+    char *alloc = (char*)malloc(Cursor * sizeof(char) + 2);
     alloc[0] = '\0';
     struct GuiProperties GUI = *GuiArray[CurrentGUI_Focused];
 
@@ -538,6 +543,7 @@ void DrawCursor() {
     TTF_SizeText(GUI.Font, alloc, &TextWidth, NULL);
     TextHeight = TTF_FontHeight(GUI.Font);
     int CursorX = TextWidth + GUI.TextRectangle.x;
+
     if (CursorY > 1)
         CursorX -= 4;
 
@@ -549,7 +555,6 @@ void DrawCursor() {
 
 void DrawGUI(int i) {
     struct GuiProperties GUI = *GuiArray[i];
-
     struct Color3 color = InitColor3(GUI.BorderColor.R, GUI.BorderColor.G, GUI.BorderColor.B, GUI.BorderColor.A);
 
     // (x, y) - topleft
@@ -576,7 +581,7 @@ void DrawGUI(int i) {
         DrawLine(bottomRight.x - borderNum, bottomRight.y, topRight.x - borderNum, topRight.y,color); /* Right line */
     }
 
-    if (IsFocused == true)
+    if (IsFocused == true && CurrentGUI_Focused > -1)
         DrawCursor();
 }
 
