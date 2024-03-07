@@ -9,7 +9,7 @@ Two int values used to specify the positions for the GUI element. Some elements 
 
 ### Parent `int`
 An int value used to specify under which element is the GUI. Setting the value to anything but -1 will result in the element to change `PositionX` and `PositionY` related to the parent GUI. Setting the value to anything higher than `LastGUI_Item` 
-will result in undefined behaviour.
+will result in it being ignored.
 ### Zindex `int`
 An int value used to specify the render priority. Setting the zindex to anythung under 1 will result in the GUI not being rendered. The maximum zindex supported is 40.
 ### BorderSize `int`
@@ -54,37 +54,41 @@ The `Color3` struct used to specify the color of the element's border. Some elem
 ## Image Property `SDL_Texture`
 The image property is used by `ImageButton` and `ImageLabel` to render text. The property has to be manually assigned once the struct has been created. Not assigning the property and rendering the element will result in nothing being displayed.
 ## Enum Properties
-### Type `GUI_TYPE` `READ ONLY`
+### Type `enum GUI_TYPE` `READ ONLY`
 An `enum` used by the library to adjust different properties, and to generate different behaviour. After constructing the element, you should not change it to something else.
 The `Type` property can have the following values:
 
-`TEXTLABEL` - Used for constructing text labels.
-
-`TEXTBOX` - Used for constructing text labels. The library looks for this property whenever the left mouse button is down and the cursor is hovering over an element.
-
-`TEXTBUTTON` - Used for constructing buttons. The library will automatically fire `MouseDown` and `MouseUp` callbacks.
-
-`IMAGELABEL` - Used for constructing image labels. The library will try to render any specified image attached to the struct.
-
-`IMAGEBUTTON` - Used for constructing image buttons. Behaves like `TextButton` and `ImageLabel`.
-
-`UILIST` - Used for constructing lists. When parented to anything than -1, it will position everything under the same parent in a list.
-### TextXAlignment `TextXAlignment`
+```C
+enum GUI_TYPE {
+    TEXTLABEL, /* Used for constructing text labels */.
+    TEXTBOX, /* Used for constructing text labels. The library looks for this property whenever the left mouse button is down and the cursor is hovering over an element. */
+    TEXTBUTTON, /* Used for constructing buttons. The library will automatically fire `MouseDown` and `MouseUp` callbacks. */
+    IMAGELABEL, /* Used for constructing image labels. The library will try to render any specified image attached to the struct. */
+    IMAGEBUTTON, /* Used for constructing image buttons. Behaves like `TextButton` and `ImageLabel`. */
+    UILIST, /* Used for constructing lists. When parented to anything than -1, it will position everything under the same parent in a list. */
+};
+```
+### TextXAlignment `enum TextXAlignment`
 An `enum` used by the library to automatically position the X coordinate of the text. Setting it to anything but the accepted enums will result in undefined behaviour. `TextWrapped` may modify it.
 The accepted enums are the following:
-`X_CENTER` - Used to center the text on the X coordinate.
+```C
+enum TEXT_XALIGNMENT {
+    X_CENTER, /* Used to center the text on the X coordinate. */
+    LEFT, /* Used to position to the left on the X coordinate. */
+    RIGHT, /* Used to position to the right on the X coordinate. */
+};
+```
 
-`LEFT` - Used to position to the left on the X coordinate.
-
-`RIGHT` - Used to position to the right on the X coordinate.
-### TextYAlignment `TextYAlignment`
+### TextYAlignment `enum TextYAlignment`
 An `enum` used by the library to automatically position the Y coordinate of the text. Setting it to anything but the accepted enums will result in undefined behaviour. `TextWrapped` may modify it.
 The accepted enums are the following:
-`Y_CENTER` - Used to center the text on the Y coordinate.
-
-`TOP` - Used to position to the top on the Y coordinate.
-
-`BOTTOM` - Used to position to the bottom on the Y coordinate.
+```C
+enum TEXT_YALIGNMENT {
+    TOP, /* Used to center the text on the Y coordinate. */
+    Y_CENTER, /* Used to position to the top on the Y coordinate. */
+    BOTTOM, /* Used to position to the bottom on the Y coordinate. */
+};
+```
 ## Callback Properties
 ### MouseDown `Function pointer`
 A function called by the library whenever the user clicks on the GUI element, one of the arguments being the index of the GUI.
