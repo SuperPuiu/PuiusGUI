@@ -10,6 +10,6 @@ PuiusGUI is a small, lightweight and compact library using primarily SDL for ren
 # Building
 Building PuiusGUI.c requires SDL2_ttf, SDL2_image and SDL2 itself. To make it easier, the project also provides a cmake file and a makefile with everything required. 
 
-PuiusGUI contains one example file which tests as many properties as possible in a maneer where it can be seen how easy it is to do it. The file is contained in `src/tests` and the compiling process can be done using both the cmake and make files provided in the repository.
+PuiusGUI contains one example file which tests as many properties as possible in a maneer where it can be seen how easy it is to do it. The file is contained in `src/tests`.
 # License
 The project is licensed under the MIT license, which can also be found in the header file.
