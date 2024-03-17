@@ -21,21 +21,24 @@ SDL_Renderer *globalRenderer;
 SDL_Window *globalWindow;
 
 struct GuiProperties *GuiArray[100];
+struct ListProperties *ListArray[100];
 bool Inputs[258];
-int Running = true;
+bool Running = true;
+
+int LastList = -1;
 int LastGUI_item = -1;
 
 TTF_Font *Font;
 
 int MouseY, MouseX;
-int LeftButtonDown = false;
+bool LeftButtonDown = false;
 
 // Textbox values
-int IsFocused = false;
-int Cursor = 0;
+bool IsFocused = false;
+size_t Cursor = 0;
 int CurrentGUI_Focused = -1;
 
-void defaultCallback(int a) {} // Used for ConstructGUI()
+void defaultCallback() {} // Used for ConstructGUI()
 void defaultCallbackHover(int index) { // Used for ConstructGUI()
     struct GuiProperties GUI = *GuiArray[index];
 
@@ -146,12 +149,12 @@ void DrawTextureEx(struct GuiProperties *GUI) {
         SDL_Color OldColor = {0, 0, 0, 0};
         SDL_GetRenderDrawColor(globalRenderer, &OldColor.r, &OldColor.g, &OldColor.b, &OldColor.a);
 
-        int Texture_x = 0;
-        int Texture_y = 0;
+        int Texture_x = 0, Texture_y = 0;
 
         if (SDL_QueryTexture(Rectangle.Image, NULL, NULL, &Texture_x, &Texture_y) != 0) {
-            GUI_INTERNAL_ERROR("[PUIUS GUI] SDL_QueryTexture failed! SDL Error:\n");
+            GUI_INTERNAL_ERROR("[PUIUS GUI] SDL_QueryTexture failed! SDL Error:");
             GUI_INTERNAL_ERROR(SDL_GetError());
+            GUI_INTERNAL_ERROR("\n");
         }
 
         SDL_Rect NewRect = {
@@ -173,12 +176,11 @@ void DrawTextureEx(struct GuiProperties *GUI) {
         SDL_SetRenderDrawColor(globalRenderer, OldColor.r, OldColor.g, OldColor.b, OldColor.a);
 
      } else {
-         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a texture without initializing globalRenderer.\n (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)\n");
+         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a texture without initializing globalRenderer. (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)\n");
     }
 }
 
 void WriteToTextBox(char *str) {
-
     if(IsFocused == false)
         return;
 
@@ -198,31 +200,29 @@ void WriteToTextBox(char *str) {
     }
 
     if (strcmp(str, "ENTER") == 0) {
-        if (GUI->MultiLine == true) {
+        if (GUI->MultiLine == false) {
             GuiArray[CurrentGUI_Focused]->FocusLost(CurrentGUI_Focused);
             IsFocused = false;
             CurrentGUI_Focused = -1;
+        } else {
+            for (size_t i = 0; i <= strlen(alloc); i++) {
+                if (i == Cursor) {
+                    alloc[i] = '\n';
+                    alloc[i + 1] = GUI->Text[i];
+                    continue;
+                } else if (i > Cursor) {
+                    alloc[i + 1] = GUI->Text[i];
+                } else {
+                    alloc[i] = GUI->Text[i];
+                }
+            };
 
-            return;
+            Cursor = Cursor + 1;
         }
-
-        for (int i = 0; i <= strlen(alloc); i++) {
-            if (i == Cursor) {
-                alloc[i] = '\n';
-                alloc[i + 1] = GUI->Text[i];
-                continue;
-            } else if (i > Cursor) {
-                alloc[i + 1] = GUI->Text[i];
-            } else {
-                alloc[i] = GUI->Text[i];
-            }
-        };
-
-        Cursor = Cursor + 1;
     }
     else if(strcmp(str, "BACKSPACE") == 0) {
         strcpy(alloc, GUI->Text);
-        for (int i = (Cursor - 1); alloc[i] != '\0'; i++) {
+        for (size_t i = (Cursor - 1); alloc[i] != '\0'; i++) {
             alloc[i] = alloc[i + 1];
         }
 
@@ -230,7 +230,7 @@ void WriteToTextBox(char *str) {
             Cursor -= 1;
     }
     else {
-        for (int i = 0; i <= strlen(alloc); i++) {
+        for (size_t i = 0; i <= strlen(alloc); i++) {
             if (i == Cursor) {
                 alloc[i] = str[0];
                 alloc[i + 1] = GUI->Text[i];
@@ -306,8 +306,23 @@ void ProcessInput() {
     }
 }
 
+int ParentHasList(int GUI_Index) {
+    struct GuiProperties GUI = *GuiArray[GUI_Index]; /* Dereference the pointer */
+
+    for (int i = 0; i <= LastList; i++) {
+        if (GUI.Parent == ListArray[i]->Parent) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 void UpdateGUI(int GUI_Index) {
     /* Variables */
+    static int CurrentList = -1, LastElement = -1;
+    int List = ParentHasList(GUI_Index);
+
     int success = 1;
     char error[100] = "empty";
     struct GuiProperties GUI = *GuiArray[GUI_Index];
@@ -315,12 +330,41 @@ void UpdateGUI(int GUI_Index) {
     SDL_Color Color = {GUI.TextColor.R, GUI.TextColor.G, GUI.TextColor.B, GUI.TextColor.A};
     SDL_Surface *surfaceMessage;
 
+    if (List != CurrentList) {
+        LastElement = GUI_Index;
+        CurrentList = List;
+    }
+
     /* Positioning */
-    if (GUI.Parent > -1 && GUI.Parent < LastGUI_item) {
+
+    if (CurrentList == -1) {
+        if (GUI.Parent > -1 && GUI.Parent < LastGUI_item) {
+            int Parent = GUI.Parent;
+
+            GuiArray[GUI_Index]->PositionX = GUI.PositionX + GuiArray[Parent]->PositionX;
+            GuiArray[GUI_Index]->PositionY = GUI.PositionY + GuiArray[Parent]->PositionY;
+        }
+    } else {
         int Parent = GUI.Parent;
 
-        GuiArray[GUI_Index]->PositionX = GUI.PositionX + GuiArray[Parent]->PositionX;
-        GuiArray[GUI_Index]->PositionY = GUI.PositionY + GuiArray[Parent]->PositionY;
+        if (LastElement == GUI_Index) {
+            GuiArray[GUI_Index]->PositionX = GuiArray[Parent]->PositionX;
+            GuiArray[GUI_Index]->PositionY = GuiArray[Parent]->PositionY;
+        } else if (ListArray[CurrentList]->Direction == DOWN) {
+            GuiArray[GUI_Index]->PositionX = GuiArray[Parent]->PositionX;
+            GuiArray[GUI_Index]->PositionY = GuiArray[LastElement]->PositionY + GUI.SizeY + ListArray[CurrentList]->PaddingY;
+        } else if (ListArray[CurrentList]->Direction == UP) {
+            GuiArray[GUI_Index]->PositionX = GuiArray[Parent]->PositionX;
+            GuiArray[GUI_Index]->PositionY = GuiArray[LastElement]->PositionY - GUI.SizeY - ListArray[CurrentList]->PaddingY;
+        } else if (ListArray[CurrentList]->Direction == DLEFT) {
+            GuiArray[GUI_Index]->PositionX = GuiArray[LastElement]->PositionX - GUI.SizeX - ListArray[CurrentList]->PaddingX;
+            GuiArray[GUI_Index]->PositionY = GuiArray[Parent]->PositionY;
+        } else if (ListArray[CurrentList]->Direction == DRIGHT) {
+            GuiArray[GUI_Index]->PositionX = GuiArray[LastElement]->PositionX + GUI.SizeX + ListArray[CurrentList]->PaddingX;
+            GuiArray[GUI_Index]->PositionY = GuiArray[Parent]->PositionY;
+        }
+
+        LastElement = GUI_Index;
     }
 
     /* Font related */
@@ -368,10 +412,15 @@ void UpdateGUI(int GUI_Index) {
     else
         GuiArray[GUI_Index]->TextFits = 1;
 
+    /* Parent properties inherit */
+
+    if (GUI.Parent > -1)
+        GuiArray[GUI_Index]->Visible = GuiArray[GUI.Parent]->Visible;
+
+    /* Ending */
     if (strcmp(error, "empty") != 0)
         GUI_INTERNAL_ERROR(error);
 
-    /* Ending */
     GuiArray[GUI_Index]->TextureText = Message;
     SDL_FreeSurface(surfaceMessage);
 }
@@ -431,11 +480,11 @@ void HandleGUI(int CurrentGUI) {
     }
 }
 
-struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
-        SDL_Color SDL_BLACK = {0, 0, 0};
-
-        struct GuiProperties *newGUI = malloc(sizeof(struct GuiProperties));
+struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width, int Height) {
         LastGUI_item += 1;
+
+        SDL_Color SDL_BLACK = {0, 0, 0, 255};
+        struct GuiProperties *newGUI = malloc(sizeof(struct GuiProperties));
 
         newGUI->BodyIndex = LastGUI_item;
         newGUI->Parent = -1;
@@ -447,8 +496,8 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
 
         newGUI->PositionX = X;
         newGUI->PositionY = Y;
-        newGUI->SizeX = 70;
-        newGUI->SizeY = 25;
+        newGUI->SizeX = Width;
+        newGUI->SizeY = Height;
 
         newGUI->Visible = true;
         newGUI->BorderSize = 1;
@@ -489,16 +538,18 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
 
             if (!alloc) {
                 GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to allocate space for string.\n");
-
-                UninitLayer();
+            } else {
+                newGUI->Text = alloc;
+                strcpy(newGUI->Text, "Text");
             }
-
-            newGUI->Text = alloc;
-            strcpy(newGUI->Text, "Text");
-        } else if (GUI == IMAGEBUTTON)
+        } else if (GUI == IMAGEBUTTON) {
             newGUI->TextEditable = false;
-        else if (GUI == IMAGELABEL)
+            newGUI->Text = "";
+        }
+        else if (GUI == IMAGELABEL) {
             newGUI->TextEditable = false;
+            newGUI->Text = "";
+        }
 
         SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Font, newGUI->Text, SDL_BLACK);
         SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
@@ -515,7 +566,30 @@ struct GuiProperties* ConstructGUI(enum GUI_TYPE GUI, int X, int Y) {
         return newGUI;
 }
 
+struct GuiProperties *PConstructGUI(GUI_TYPE GUI, int X, int Y) {
+    /* A function which simply calls the internal constructor, which is exposed by the header file. */
+    return PSConstructGUI(GUI, X, Y, DEFAULT_ELEMENT_WIDTH, DEFAULT_ELEMENT_HEIGHT);
+}
+
+struct ListProperties *ConstructList(LIST_TYPE Type, int Parent, int PaddingX, int PaddingY) {
+    LastList++;
+    struct ListProperties *newGUI = malloc(sizeof(struct ListProperties));
+
+    newGUI->Parent = Parent;
+    newGUI->PaddingX = PaddingX;
+    newGUI->PaddingY = PaddingY;
+
+    newGUI->Type = Type;
+    newGUI->SortOrder = LAYOUTORDER;
+    newGUI->Direction = DOWN;
+
+    newGUI->Wraps = false;
+    ListArray[LastList] = newGUI;
+    return newGUI;
+}
+
 void DrawCursor() {
+    // TODO: Ensure that DrawCursor works with TextWrapped enabled
     if (GuiArray[CurrentGUI_Focused]->TextEditable == false)
         return;
 
@@ -528,7 +602,7 @@ void DrawCursor() {
 
     char s = ' '; /* :moyai: */
 
-    for (int i = 0; i < Cursor; i++) {
+    for (size_t i = 0; i < Cursor; i++) {
         if (GUI.Text[i] == '\n') {
             alloc[0] = '\0';
             CursorY += 1;
@@ -562,11 +636,10 @@ void DrawGUI(int i) {
     // (x, y + sy) - bottomleft
     // (x + sx, y + sy) - bottomright
 
-    if(GUI.Type != IMAGELABEL && GUI.Type != IMAGEBUTTON) {
-        DrawRectangleRec(&GUI);
-        DrawText(&GUI);
-    }
-    else
+    DrawRectangleRec(&GUI);
+    DrawText(&GUI);
+
+    if (GUI.Type == IMAGELABEL || GUI.Type == IMAGEBUTTON)
         DrawTextureEx(&GUI);
 
     for (int borderNum = 0; borderNum < GUI.BorderSize; borderNum++) {
@@ -588,12 +661,12 @@ void DrawGUI(int i) {
 void RenderGUI() {
     int LargestZindex = 2;
 
-    for (int x = 1; x < 40; x++) {
+    for (int x = 0; x < 40; x++) {
         if (LargestZindex + 1 == x)
             break;
 
-        for (int i = 0; i < 100; i++) {
-            if (i > LastGUI_item || GuiArray[i]->Zindex == 0)
+        for (int i = 0; i <= LastGUI_item; i++) {
+            if (GuiArray[i]->Zindex == 0)
                 break;
 
             if (GuiArray[i]->Zindex != x || GuiArray[i]->Visible == false)
@@ -608,7 +681,7 @@ void RenderGUI() {
     }
 }
 
-int InitLayer(SDL_Renderer *renderer, SDL_Window *window) {
+int InitGUI(SDL_Renderer *renderer, SDL_Window *window) {
     WHITE = InitColor3(255, 255, 255, 255);
     BLACK = InitColor3(0, 0, 0, 255);
     RED = InitColor3(230, 41, 55, 255);
@@ -652,7 +725,7 @@ int ChangeDefaultFont(char *fontName, int fontSize) {
     return true;
 }
 
-void UninitLayer() {
+void UninitGUI() {
     for (int i = 0; i < LastGUI_item; i++) {
         SDL_DestroyTexture(GuiArray[i]->TextureText);
 
