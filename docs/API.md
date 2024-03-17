@@ -2,28 +2,33 @@
 # GUI Properties
 ## General Properties
 ### PositionX and PositionY `int`
-Two int values used to specify the positions for the GUI element. Some elements ignore this property. `ConstructGUI` takes two parameters for creating new elements.
+Two int values used to specify the positions for the GUI element.
 
 ### SizeX and SizeY `int`
-Two int values used to specify the positions for the GUI element. Some elements ignore this property. The default values for SizeX is 75 and for SizeY 25.
+Two int values used to specify the positions for the GUI element. Some elements ignore this property. The default values for SizeX is 75 and for SizeY 25, which can be changed by modifying `DEFAULT_ELEMENT_WIDTH` respectively `DEFAULT_ELEMENT_HEIGHT`
 
 ### Parent `int`
-An int value used to specify under which element is the GUI. Setting the value to anything but -1 will result in the element to change `PositionX` and `PositionY` related to the parent GUI. Setting the value to anything higher than `LastGUI_Item` 
+An int value used to specify under which element is the GUI. Setting the value to anything but -1 will result in the element to inherit some properties from the parent element. Setting the value to anything higher than `LastGUI_Item` 
 will result in it being ignored.
 ### Zindex `int`
 An int value used to specify the render priority. Setting the zindex to anythung under 1 will result in the GUI not being rendered. The maximum zindex supported is 40.
 ### BorderSize `int`
 An int value used to specify what is the size of the GUI element border. Some elements ignore this property.
 ### OutlineSize `int`
-An int value used to specify what is the size of the text's outline. Any element other than `TextBox` and `TextLabel` will ignore this property.
+An int value used to specify what is the size of the text's outline. Some elements ignore this property.
 ### Visible `bool`
 A bool value used to specify if the GUI element will be rendered or not. 
 ### Pressed `bool` `READ ONLY`
 A bool value which is automatically set to true if the button is being pressed. The bool is set to false if otherwise.
 ### Active `bool`
-A bool value used by the library to specify if the GUI element will fire callbacks. *To be implemented in 0.0.5*
+A bool value used by the library to specify if the GUI element will fire callbacks. *To be implemented in 0.0.6*
 ### Hovered `bool` `READ ONLY`
-A bool value used by the library to specify if the GUI is currently being hovered or not.  
+A bool value used by the library to specify if the GUI is currently being hovered or not.
+### MultiLine `bool`
+A bool value used by `TextBox` elements to determine whenever `FocusLost` should be called or not after pressing enter.
+### BodyIndex `int` `READ ONLY`
+An int value which is automatically assigned when constructing a new GUI element. It represents the index where it is located in `GuiArray`.
+
 ## Text Properties
 
 ### TextEditable `bool`
@@ -52,7 +57,7 @@ The `Color3` struct used to specify the color of the element's text. Some elemen
 ### BorderlineColor `Color3`
 The `Color3` struct used to specify the color of the element's border. Some elements will ignore the property.
 ## Image Property `SDL_Texture`
-The image property is used by `ImageButton` and `ImageLabel` to render text. The property has to be manually assigned once the struct has been created. Not assigning the property and rendering the element will result in nothing being displayed.
+The image property is used by `ImageButton` and `ImageLabel` to render images. The property has to be manually assigned once the struct has been created. Not assigning the property and rendering the element will result in nothing being displayed and an error being thrown.
 ## Enum Properties
 ### Type `enum GUI_TYPE` `READ ONLY`
 An `enum` used by the library to adjust different properties, and to generate different behaviour. After constructing the element, you should not change it to something else.
@@ -100,10 +105,10 @@ A function called by the library whenever the cursor leaves the element, one of 
 A function called by the library whenever the user just finished editing the textbox, one of the arguments being the index of the GUI.
 # Functions
 ## General Functions
-### InitLayer(SDL_Renderer *renderer, SDL_Window *window) `int Function`
+### InitGUI(SDL_Renderer *renderer, SDL_Window *window) `int Function`
 A core function used to initialize the library. The init function loads `arial.ttf`, ensure that `globalRenderer`,`globalWindow` and default `Color3` structs are initialized.
 
-### UninitLayer() `void Function`
+### UninitGUI() `void Function`
 A core function used to automatically free allocated **textboxes**'s text and other elements' `TextureText` variables.
 
 ### RenderGUI() `void Function`
@@ -119,18 +124,27 @@ A function used to update all buttons at once. This function uses a for loop whi
 A function used to change the default font. `*FontName` should be a pointer to the location of the file.
 
 ## Constructors
-### ConstructGUI(enum GUI_TYPE, int PositionX, int PositionY) `int Function`
+### PConstruct(enum GUI_TYPE, int PositionX, int PositionY) `struct GuiProperties* Function`
 A core function which constructs a new GUI element based on the given enum and positions. See `Type` values for more information.
+
+### PSConstruct(enum GUI_TYPE, int PositionX, int PositionY, int SizeX, int SizeY) `struct GuiProperties* Function`
+A core function which constructs a new GUI element based on the given enum and coordinates. See `Type` values for more information.
+
+### ConstructList(LIST_TYPE Type, int Parent, int PaddingX, int PaddingY) `struct ListProperties*`
+A function which constructs a new list based on the given LIST_TYPE enum and additional parameters.
 
 ### InitColor3(int R, int G, int B, int A) `struct Color3 Function`
 Function used to construct more easily `Color3` structs. It returns a structure, and accepts 4 arguments.
 
 # Header extern values
-### GuiArray `struct GuiProperties`
+### GuiArray `struct GuiProperties*`
 A core structure used by the library to store and render GUI items. Can be used to modify a GUI element's properties using the index provided by `ConstructGUI()`.
 
 ### LastGUI_Item `int` `READ ONLY`
-An int value which contains the last index of the `GuiArray`. Changing it may result in undefined behaviour.
+An int value which contains the last index of `GuiArray`. Changing it may result in undefined behaviour.
+
+### LastList `int` `READ ONLY`
+An int value which contains the last index of `ListArray`. Changing it may result in undefined behaivour. 
 
 ### IsFocused `bool`
 A bool value set by the library whenever the user is editing a textbox or not.
@@ -141,5 +155,5 @@ An int set by the library whenever the user is editing a textbox. Do not rely on
 ### Inputs `bool*`
 A bool array used by `ProcessInput()` function to store pressed keys and other important inputs.
 
-### Running `int`
+### Running `bool`
 Used by the `ProcessInputs()` function. The value is set to 0 whenever the `SDL_QUIT` event is encountered. Should be used for creating the game's loop.
