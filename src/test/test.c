@@ -13,8 +13,16 @@
 #define WINDOW_WIDTH 600
 #define WINDOW_HEIGHT 600
 
-void CloseGame(int index) {
-    Running = 0;
+struct GuiProperties *Frame;
+
+void ListFunction() {
+    if (Frame->Visible == true) {
+        Frame->Visible = false;
+    } else {
+        Frame->Visible = true;
+    }
+
+    UpdateAllGUI();
 }
 
 int main() {
@@ -30,8 +38,6 @@ int main() {
 
     strcat(ImagePath, "/test/PixelatedPuius.png");
     strcat(FontPath, "/test/font1.ttf");
-
-    printf("%s\n", FontPath);
 
     SDL_Init(SDL_INIT_EVERYTHING);
     TTF_Init();
@@ -49,98 +55,123 @@ int main() {
     int CenterY = WINDOW_HEIGHT / 2;
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
-    InitLayer(renderer, window);
+    InitGUI(renderer, window);
 
     ChangeDefaultFont(FontPath, 16);
 
     SDL_Texture *texture = NULL;
     texture = IMG_LoadTexture(renderer, ImagePath);
 
-    int Label1 = ConstructGUI(TEXTLABEL, 0, 0);
-    int Button1 = ConstructGUI(TEXTBUTTON, 0, 0);
-    int Image1 = ConstructGUI(IMAGELABEL, 0, 0);
-    int Box1 = ConstructGUI(TEXTBOX, 0, 0);
+    struct GuiProperties *Label1 = PSConstructGUI(TEXTLABEL, 0, 0, 200, 20); /* Could make the arguments more flexible if needed */
+    struct GuiProperties *Button1 = PSConstructGUI(TEXTBUTTON, 0, 0, DEFAULT_ELEMENT_WIDTH, DEFAULT_ELEMENT_HEIGHT);
+    struct GuiProperties *Box1 = PSConstructGUI(TEXTBOX, 0, 0, 0, DEFAULT_ELEMENT_HEIGHT + 25);
+    struct GuiProperties *Image1 = PSConstructGUI(IMAGELABEL, 0, 0, 128, 128);
+    Frame = PSConstructGUI(TEXTLABEL, 0, 0, 100, 200);
+
+    /* Construct a list */
+    ConstructList(UILIST, Frame->BodyIndex, 0, 0);
 
     /* *          * */
     /* * LABEL #1 * */
     /* *          * */
     /* Label coordinates */
-    GuiArray[Label1].SizeX = 200;
-    GuiArray[Label1].SizeY = 20;
-    GuiArray[Label1].PositionX = CenterX - GuiArray[Label1].SizeX / 2;
-    GuiArray[Label1].PositionY = CenterY - GuiArray[Label1].SizeY + 15;
+    Label1->PositionX = CenterX - Label1->SizeX / 2;
+    Label1->PositionY = CenterY - Label1->SizeY + 15;
 
     /* Label text-related properties */
-    GuiArray[Label1].TextXAlignment = X_CENTER;
-    GuiArray[Label1].TextYAlignment = Y_CENTER;
-    GuiArray[Label1].Text = "PuiusGUI Example";
+    Label1->TextXAlignment = X_CENTER;
+    Label1->TextYAlignment = Y_CENTER;
+    Label1->Text = "PuiusGUI Example";
 
     /* Label colors */
-    GuiArray[Label1].BackgroundColor = BackgroundColor;
-    GuiArray[Label1].TextColor = WHITE;
-    GuiArray[Label1].BorderColor = WHITE;
+    Label1->BackgroundColor = BackgroundColor;
+    Label1->TextColor = WHITE;
+    Label1->BorderColor = WHITE;
 
     /* Label miscellaneous */
-    GuiArray[Label1].TextSize = 16;
+    Label1->TextSize = 16;
 
     /* *        * */
     /* * BUTTON * */
     /* *        * */
     /* Button coordinates */
-    GuiArray[Button1].SizeY = 20;
-    GuiArray[Button1].PositionX = CenterX - GuiArray[Button1].SizeX / 2;
-    GuiArray[Button1].PositionY = CenterY - GuiArray[Button1].SizeY + 50;
+    Button1->PositionX = CenterX - Button1->SizeX / 2;
+    Button1->PositionY = CenterY - Button1->SizeY + 50;
 
     /* Button text-related properties */
-    GuiArray[Button1].Text = "CLOSE";
-    GuiArray[Button1].TextXAlignment = X_CENTER;
-    GuiArray[Button1].TextYAlignment = Y_CENTER;
+    Button1->Text = "LIST";
+    Button1->TextXAlignment = X_CENTER;
+    Button1->TextYAlignment = Y_CENTER;
 
     /* Button colors */
-    GuiArray[Button1].BackgroundColor = BackgroundColor;
-    GuiArray[Button1].TextColor = WHITE;
-    GuiArray[Button1].BorderColor = WHITE;
+    Button1->BackgroundColor = BackgroundColor;
+    Button1->TextColor = WHITE;
+    Button1->BorderColor = WHITE;
 
     /* Button callbacks */
-    GuiArray[Button1].MouseDown = CloseGame;
+    Button1->MouseDown = ListFunction;
 
     /* *       * */
     /* * IMAGE * */
     /* *       * */
     /* Image coordinates */
-    GuiArray[Image1].SizeX = 128;
-    GuiArray[Image1].SizeY = 128;
-    GuiArray[Image1].PositionX = CenterX - GuiArray[Image1].SizeX / 2;
-    GuiArray[Image1].PositionY = CenterY - GuiArray[Image1].SizeY / 2 - 68;
+    Image1->PositionX = CenterX - Image1->SizeX / 2;
+    Image1->PositionY = CenterY - Image1->SizeY / 2 - 68;
 
     /* Image miscellaneous */
-    GuiArray[Image1].BorderSize = 0;
-    GuiArray[Image1].Image = texture;
+    Image1->BorderSize = 0;
+    Image1->Image = texture;
+    Image1->BackgroundColor = InitColor3(0, 0, 0, 0);
 
     /* *     * */
     /* * BOX * */
     /* *     * */
     /* Box coordinates */
-    GuiArray[Box1].SizeX = 100;
-    GuiArray[Box1].SizeY = 35;
-    GuiArray[Box1].PositionX = GuiArray[Button1].PositionX + GuiArray[Box1].SizeX;
-    GuiArray[Box1].PositionY = GuiArray[Button1].PositionY - 10;
+    Box1->SizeX = 100;
+    Box1->PositionX = Button1->PositionX + Box1->SizeX;
+    Box1->PositionY = Button1->PositionY;
 
     /* Box colors */
-    GuiArray[Box1].BackgroundColor = BackgroundColor;
-    GuiArray[Box1].TextColor = WHITE;
-    GuiArray[Box1].BorderColor = WHITE;
+    Box1->BackgroundColor = BackgroundColor;
+    Box1->TextColor = WHITE;
+    Box1->BorderColor = WHITE;
 
     /* Box text-related properties */
-    GuiArray[Box1].TextWrapped = true;
-    GuiArray[Box1].TextSize = 12;
+    // Box1->TextWrapped = true;
+    Box1->TextSize = 12;
+
+    /* *        * */
+    /* *  FRAME * */
+    /* *        * */
+    /* Frame coordinates */
+    Frame->PositionX = (Button1->PositionX + Button1->SizeX / 2) - Frame->SizeX / 2;
+    Frame->PositionY = Button1->PositionY + Button1->SizeY;
+
+    /* Frame Colors */
+    Frame->BackgroundColor = BackgroundColor;
+
+    /* Frame miscellaneous */
+    Frame->Visible = false;
+    Frame->Text = "";
+
+    for (int i = 0; i < 3; i++) {
+        struct GuiProperties *NewLabel = PConstructGUI(TEXTLABEL, 0, 0);
+
+        NewLabel->SizeX = Frame->SizeX;
+        NewLabel->Parent = Frame->BodyIndex;
+        NewLabel->Text = "Test";
+    }
 
     UpdateAllGUI();
-    while(Running == 1) {
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+
+    while(Running == true) {
         ProcessInput();
 
-        if(Inputs[41] == 1)
-            Running = 0;
+        if(Inputs[41] == true)
+            Running = false;
 
         SDL_SetRenderDrawColor(renderer, 33, 33, 33, 255);
         SDL_RenderClear(renderer);
@@ -152,5 +183,5 @@ int main() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
-    UninitLayer();
+    UninitGUI();
 }

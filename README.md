@@ -1,16 +1,15 @@
 # PuiusGUI
-This project aims to give an easy to use, single file GUI library for SDL2.
+PuiusGUI is a small, lightweight and compact library using primarily SDL for render backend. By design, PuiusGUI provides a variety of functions and structs useful for rendering plenty of stuff, such as buttons, both image and text labels, image and text buttons and many more. Another important thing to note is the simplicity of the API, which was designed like that and improved since the beginning. The choice of using C as the programming language for this project also makes it easy to port other languages.
 
-The header contains multiple functions that you can use, but most important is `InitLayer`, `ConstructGUI` and `UpdateAllGUI`. Additionaly, there are variables such as `IsFocused`, `LastGUI_item` and `CurrentGUI_Focused`. If you need more information, consider checking the documentation.
-
-# Examples
-The library contains one example which is used to test most of the PuiusGUI functionality. It is important to note that it can be easily built by using `make`. test.c can be found in the `src/tests`.
+# Features
+- Single-header library
+- Simple and easy to use API
+- Documentation (found in api.md)
+- Extremely small codebase (~1k Lines of Code)
 
 # Building
-To build, PuiusGUI.c requires SDL.h and SDL_image.h and SDL_ttf.h.
+Building PuiusGUI.c requires SDL2_ttf, SDL2_image and SDL2 itself. To make it easier, the project also provides a cmake file and a makefile with everything required. 
 
-use `make buildSO` and `make install` to build and respectively install the library.
-Alternatively, use the cmake file provided.
-
+PuiusGUI contains one example file which tests as many properties as possible in a maneer where it can be seen how easy it is to do it. The file is contained in `src/tests`.
 # License
-PuiusGUI.c and PuiusGUI.h are licensed under the MIT license.
+The project is licensed under the MIT license, which can also be found in the header file.
