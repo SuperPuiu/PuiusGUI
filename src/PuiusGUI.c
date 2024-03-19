@@ -201,9 +201,9 @@ void WriteToTextBox(char *str) {
 
     if (strcmp(str, "ENTER") == 0) {
         if (GUI->MultiLine == false) {
+            strcpy(alloc, GUI->Text);
             GuiArray[CurrentGUI_Focused]->FocusLost(CurrentGUI_Focused);
             IsFocused = false;
-            CurrentGUI_Focused = -1;
         } else {
             for (size_t i = 0; i <= strlen(alloc); i++) {
                 if (i == Cursor) {
@@ -443,7 +443,7 @@ void HandleGUI(int CurrentGUI) {
 
     if ((isColliding && GUI.Type == TEXTBUTTON) || (isColliding && GUI.Type == IMAGEBUTTON) || (isColliding && GUI.Type == TEXTBOX)) {
         if (GuiArray[CurrentGUI]->Hovered == false)
-            GuiArray[CurrentGUI]->MouseLeave(CurrentGUI);
+            GuiArray[CurrentGUI]->MouseEnter(CurrentGUI);
 
         GuiArray[CurrentGUI]->Hovered = true;
 
@@ -473,7 +473,7 @@ void HandleGUI(int CurrentGUI) {
     }
     else if ((!isColliding && GUI.Type == TEXTBUTTON) || (!isColliding && GUI.Type == IMAGEBUTTON) || (!isColliding && GUI.Type == TEXTBOX)) {
         if (GuiArray[CurrentGUI]->Hovered == true)
-            GuiArray[CurrentGUI]->MouseEnter(CurrentGUI);
+            GuiArray[CurrentGUI]->MouseLeave(CurrentGUI);
 
         GuiArray[CurrentGUI]->Hovered = false;
         GuiArray[CurrentGUI]->Pressed = false;
