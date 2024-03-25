@@ -32,20 +32,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-VERSION 0.0.5:
-* Added DEFAULT_ELEMENT_WIDTH and DEFAULT_ELEMENT_HEIGHT;
-* Added an experimental version of UIList;
-* Added error suppressing by defining #SUPPRESS_GUI_ERRORS;
-* Added MultiLine and BodyIndex properties to GuiProperties;
-* Added DrawCursor function, which doesn't work properly with TextWrapped;
-* Added support for image and text drawing within the same GUI element;
-* Added background color support for ImageLabels and ImageButtons;
-* Fixed visibility not being inherited by child elements;
-* Enums can now be accessed using only their name, without 'enum';
-* More APIs were renamed from their ancient naming;
-* Corrected some variables declaring method;
-* Improved error feedback;
-* The library now can sucessfully compile with -Wextra gcc flag;
+VERSION 0.0.6:
+* Fixed MultiLine bug;
+* Fixed MouseEnter and MouseLeave callbacks being inverted;
+* Fixed Active property of GuiProperties;
+* Improved the test.c file;
+* Renamed some GUI_TYPE elements;
+* Removed ImageButton;
+* Removed default hover callbacks;
 */
 
 #ifndef PUIUS_GUI
@@ -64,9 +58,9 @@ VERSION 0.0.5:
 typedef enum GUI_TYPE {
     TEXTLABEL,
     TEXTBOX,
-    TEXTBUTTON,
+    BUTTON,
     IMAGELABEL,
-    IMAGEBUTTON,
+    SCROLLFRAME,
 } GUI_TYPE;
 
 typedef enum LIST_TYPE {
@@ -132,6 +126,7 @@ struct GuiProperties {
   struct Color3 BorderColor;
 
   SDL_Texture *Image;
+  SDL_Renderer *AssignedRenderer;
 
   GUI_TYPE Type;
   TEXT_XALIGNMENT TextXAlignment;
@@ -150,6 +145,7 @@ struct GuiProperties {
   int TextSize;
 
   void (*MouseDown)(int GuiIndex);
+  void (*MouseUp)(int GuiIndex);
   void (*MouseEnter)(int GuiIndex);
   void (*MouseLeave)(int GuiIndex);
   void (*FocusLost)(int GuiIndex);
@@ -177,7 +173,7 @@ struct ListProperties {
 
 void DrawRectangleRec(struct GuiProperties *GUI);
 
-int InitGUI(SDL_Renderer *renderer, SDL_Window *window);
+int InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize);
 int ChangeDefaultFont(char *FontName, int FontSize);
 void UninitGUI();
 
@@ -186,8 +182,8 @@ void ProcessInput();
 struct Color3 InitColor3(int R, int G, int B, int A);
 
 struct GuiProperties* PSConstructGUI(GUI_TYPE GUI, int X, int Y, int Width, int Height);
-struct GuiProperties *PConstructGUI(GUI_TYPE GUI, int X, int Y);
-struct ListProperties *ConstructList(LIST_TYPE Type, int Parent, int PaddingX, int PaddingY);
+struct GuiProperties* PConstructGUI(GUI_TYPE GUI, int X, int Y);
+struct ListProperties* ConstructList(LIST_TYPE Type, int Parent, int PaddingX, int PaddingY);
 
 void RenderGUI();
 void UpdateGUI(int GUI_Index);
