@@ -17,8 +17,7 @@ struct Color3 LIME;
 struct Color3 GRAY;
 struct Color3 VIOLET;
 
-SDL_Renderer *globalRenderer;
-SDL_Window *globalWindow;
+SDL_Renderer *GlobalRenderer;
 
 struct GuiProperties *GuiArray[100];
 struct ListProperties *ListArray[100];
@@ -27,6 +26,7 @@ bool Running = true;
 
 int LastList = -1;
 int LastGUI_item = -1;
+int TabSize = 4; /* How many spaces are added for a tab */
 
 TTF_Font *Font;
 
@@ -39,21 +39,6 @@ size_t Cursor = 0;
 int CurrentGUI_Focused = -1;
 
 void defaultCallback() {} // Used for ConstructGUI()
-void defaultCallbackHover(int index) { // Used for ConstructGUI()
-    struct GuiProperties GUI = *GuiArray[index];
-
-    GUI.BackgroundColor.R += 10;
-    GUI.BackgroundColor.G += 10;
-    GUI.BackgroundColor.B += 10;
-}
-
-void defaultCallbackHoverLeave(int index) {
-    struct GuiProperties GUI = *GuiArray[index];
-
-    GUI.BackgroundColor.R -= 10;
-    GUI.BackgroundColor.G -= 10;
-    GUI.BackgroundColor.B -= 10;
-}
 
 struct Color3 InitColor3(int R, int G, int B, int A) {
     struct Color3 Color;
@@ -92,9 +77,9 @@ void DrawRectangleRec(struct GuiProperties *GUI) {
     struct GuiProperties rectangle = *GUI;
 
     /* Set the color to the specified color, draw the rectangle, reset the color. */
-    if (globalRenderer) {
+    if (GlobalRenderer) {
         SDL_Color oldColor = {0, 0, 0, 0};
-        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
+        SDL_GetRenderDrawColor(GUI->AssignedRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
         SDL_Rect newRect = {
             rectangle.PositionX,
@@ -103,39 +88,39 @@ void DrawRectangleRec(struct GuiProperties *GUI) {
             rectangle.SizeY
         };
 
-        SDL_SetRenderDrawColor(globalRenderer, rectangle.BackgroundColor.R, rectangle.BackgroundColor.G, rectangle.BackgroundColor.B, rectangle.BackgroundColor.A);
-        SDL_RenderFillRect(globalRenderer, &newRect);
-        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
+        SDL_SetRenderDrawColor(GUI->AssignedRenderer, rectangle.BackgroundColor.R, rectangle.BackgroundColor.G, rectangle.BackgroundColor.B, rectangle.BackgroundColor.A);
+        SDL_RenderFillRect(GUI->AssignedRenderer, &newRect);
+        SDL_SetRenderDrawColor(GUI->AssignedRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
 
      } else {
-         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a rectangle without initializing globalRenderer.\n (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)\n");
+         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a rectangle without initializing GlobalRenderer.\n (use InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) to initialize GlobalRenderer)\n");
     }
 }
 
-void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color) {
+void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color, SDL_Renderer *AssignedRenderer) {
     /* Set the color to the specified color, draw the line, reset the color. */
-    if (globalRenderer) {
+    if (GlobalRenderer) {
         SDL_Color oldColor = {0, 0, 0, 0};
-        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
+        SDL_GetRenderDrawColor(AssignedRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
-        SDL_SetRenderDrawColor(globalRenderer, Color.R, Color.G, Color.B, 255);
-        SDL_RenderDrawLine(globalRenderer, StartX, StartY, EndX, EndY);
-        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
+        SDL_SetRenderDrawColor(AssignedRenderer, Color.R, Color.G, Color.B, 255);
+        SDL_RenderDrawLine(AssignedRenderer, StartX, StartY, EndX, EndY);
+        SDL_SetRenderDrawColor(AssignedRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
     } else {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a line without initializing globalRenderer.\n (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)\n");
+        GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a line without initializing GlobalRenderer.\n (use InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) to initialize GlobalRenderer)\n");
     }
 }
 
 void DrawText(struct GuiProperties *GUI) {
     struct GuiProperties gui = *GUI;
 
-    if (globalRenderer) {
+    if (GlobalRenderer) {
         SDL_Color oldColor = {0, 0, 0, 0};
-        SDL_GetRenderDrawColor(globalRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
+        SDL_GetRenderDrawColor(GUI->AssignedRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
-        SDL_SetRenderDrawColor(globalRenderer, gui.TextColor.R, gui.TextColor.G, gui.TextColor.B, gui.TextColor.A);
-        SDL_RenderCopy(globalRenderer, gui.TextureText, NULL, &gui.TextRectangle);
-        SDL_SetRenderDrawColor(globalRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
+        SDL_SetRenderDrawColor(GUI->AssignedRenderer, gui.TextColor.R, gui.TextColor.G, gui.TextColor.B, gui.TextColor.A);
+        SDL_RenderCopy(GUI->AssignedRenderer, gui.TextureText, NULL, &gui.TextRectangle);
+        SDL_SetRenderDrawColor(GUI->AssignedRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
     }
 }
 
@@ -145,9 +130,9 @@ void DrawTextureEx(struct GuiProperties *GUI) {
     if (!Rectangle.Image)
         GUI_INTERNAL_ERROR("[PUIUS GUI] GUI element contains no image property! Did you forget to add the image pointer?\n");
 
-    if (globalRenderer) {
+    if (GlobalRenderer) {
         SDL_Color OldColor = {0, 0, 0, 0};
-        SDL_GetRenderDrawColor(globalRenderer, &OldColor.r, &OldColor.g, &OldColor.b, &OldColor.a);
+        SDL_GetRenderDrawColor(GUI->AssignedRenderer, &OldColor.r, &OldColor.g, &OldColor.b, &OldColor.a);
 
         int Texture_x = 0, Texture_y = 0;
 
@@ -171,12 +156,12 @@ void DrawTextureEx(struct GuiProperties *GUI) {
             Texture_y
         };
 
-        SDL_SetRenderDrawColor(globalRenderer, Rectangle.BackgroundColor.R, Rectangle.BackgroundColor.G, Rectangle.BackgroundColor.B, Rectangle.BackgroundColor.A);
-        SDL_RenderCopyEx(globalRenderer, Rectangle.Image, &Part, &NewRect, 0, NULL, SDL_FLIP_NONE);
-        SDL_SetRenderDrawColor(globalRenderer, OldColor.r, OldColor.g, OldColor.b, OldColor.a);
+        SDL_SetRenderDrawColor(GUI->AssignedRenderer, Rectangle.BackgroundColor.R, Rectangle.BackgroundColor.G, Rectangle.BackgroundColor.B, Rectangle.BackgroundColor.A);
+        SDL_RenderCopyEx(GUI->AssignedRenderer, Rectangle.Image, &Part, &NewRect, 0, NULL, SDL_FLIP_NONE);
+        SDL_SetRenderDrawColor(GUI->AssignedRenderer, OldColor.r, OldColor.g, OldColor.b, OldColor.a);
 
      } else {
-         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a texture without initializing globalRenderer. (use initLayer(SDL_Renderer* renderer, SDL_Window *window) to initialize globalRenderer)\n");
+         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a texture without initializing the library. (use InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) to initialize GlobalRenderer)\n");
     }
 }
 
@@ -382,7 +367,7 @@ void UpdateGUI(int GUI_Index) {
     else
         surfaceMessage = TTF_RenderText_Blended_Wrapped(GUI.Font, GUI.Text, Color, 0);
 
-    SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
+    SDL_Texture *Message = SDL_CreateTextureFromSurface(GuiArray[GUI_Index]->AssignedRenderer, surfaceMessage);
     SDL_GetClipRect(surfaceMessage, &GuiArray[GUI_Index]->TextRectangle);
 
     /* Calculate the position based on gui's enums */
@@ -412,7 +397,7 @@ void UpdateGUI(int GUI_Index) {
     else
         GuiArray[GUI_Index]->TextFits = 1;
 
-    /* Parent properties inherit */
+    /* Inherit parent properties */
 
     if (GUI.Parent > -1)
         GuiArray[GUI_Index]->Visible = GuiArray[GUI.Parent]->Visible;
@@ -436,20 +421,15 @@ void HandleGUI(int CurrentGUI) {
     struct GuiProperties GUI = *GuiArray[CurrentGUI];
     int isColliding = CollosionRectPoint(GuiArray[CurrentGUI], MouseX, MouseY);
 
-    if (GuiArray[CurrentGUI_Focused]->TextEditable == false) {
-        IsFocused = false;
-        CurrentGUI_Focused = -1;
-    }
-
-    if ((isColliding && GUI.Type == TEXTBUTTON) || (isColliding && GUI.Type == IMAGEBUTTON) || (isColliding && GUI.Type == TEXTBOX)) {
-        if (GuiArray[CurrentGUI]->Hovered == false)
+    if ((isColliding && GUI.Type == BUTTON) || (isColliding && GUI.Type == TEXTBOX)) {
+        if (GuiArray[CurrentGUI]->Hovered == false && GuiArray[CurrentGUI]->Active == true)
             GuiArray[CurrentGUI]->MouseEnter(CurrentGUI);
 
         GuiArray[CurrentGUI]->Hovered = true;
 
         if (LeftButtonDown) {
             /* Trigger MouseDown callback */
-            if (GuiArray[CurrentGUI]->Pressed == false)
+            if (GuiArray[CurrentGUI]->Pressed == false && GuiArray[CurrentGUI]->Active == true)
                 GuiArray[CurrentGUI]->MouseDown(CurrentGUI);
 
             /* Change Property */
@@ -471,8 +451,8 @@ void HandleGUI(int CurrentGUI) {
             GuiArray[CurrentGUI]->Pressed = false;
         }
     }
-    else if ((!isColliding && GUI.Type == TEXTBUTTON) || (!isColliding && GUI.Type == IMAGEBUTTON) || (!isColliding && GUI.Type == TEXTBOX)) {
-        if (GuiArray[CurrentGUI]->Hovered == true)
+    else if ((!isColliding && GUI.Type == BUTTON) || (!isColliding && GUI.Type == TEXTBOX)) {
+        if (GuiArray[CurrentGUI]->Hovered == true && GuiArray[CurrentGUI]->Active == true)
             GuiArray[CurrentGUI]->MouseLeave(CurrentGUI);
 
         GuiArray[CurrentGUI]->Hovered = false;
@@ -493,6 +473,7 @@ struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width,
         newGUI->Type = GUI;
         newGUI->Hovered = false;
         newGUI->Pressed = false;
+        newGUI->Active = true;
 
         newGUI->PositionX = X;
         newGUI->PositionY = Y;
@@ -514,10 +495,11 @@ struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width,
         newGUI->BorderColor = BLACK;
 
         /* Ensure that no pointer is left which could trigger an error */
-        newGUI->MouseEnter = defaultCallbackHover;
+        newGUI->MouseEnter = defaultCallback;
+        newGUI->MouseLeave = defaultCallback;
+        newGUI->MouseUp = defaultCallback;
         newGUI->MouseDown = defaultCallback;
         newGUI->FocusLost = defaultCallback;
-        newGUI->MouseLeave = defaultCallbackHoverLeave;
 
         newGUI->TextRectangle.x = 0;
         newGUI->TextRectangle.y = 0;
@@ -530,7 +512,7 @@ struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width,
 
         if (GUI == TEXTLABEL)
             newGUI->TextEditable = false;
-        else if (GUI == TEXTBUTTON)
+        else if (GUI == BUTTON)
             newGUI->TextEditable = false;
         else if (GUI == TEXTBOX) {
             newGUI->TextEditable = true;
@@ -542,18 +524,15 @@ struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width,
                 newGUI->Text = alloc;
                 strcpy(newGUI->Text, "Text");
             }
-        } else if (GUI == IMAGEBUTTON) {
-            newGUI->TextEditable = false;
-            newGUI->Text = "";
-        }
-        else if (GUI == IMAGELABEL) {
+        } else if (GUI == IMAGELABEL) {
             newGUI->TextEditable = false;
             newGUI->Text = "";
         }
 
         SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Font, newGUI->Text, SDL_BLACK);
-        SDL_Texture *Message = SDL_CreateTextureFromSurface(globalRenderer, surfaceMessage);
+        SDL_Texture *Message = SDL_CreateTextureFromSurface(GlobalRenderer, surfaceMessage);
 
+        newGUI->AssignedRenderer = GlobalRenderer;
         newGUI->TextureText = Message;
         newGUI->Font = Font;
 
@@ -623,7 +602,7 @@ void DrawCursor() {
 
     CursorY = CursorY * TextHeight + GUI.TextRectangle.y;
 
-    DrawLine(CursorX, CursorY, CursorX, CursorY - TextHeight, InitColor3(255 - GUI.BackgroundColor.R, 255 - GUI.BackgroundColor.G, 255 - GUI.BackgroundColor.B, GUI.BackgroundColor.A));
+    DrawLine(CursorX, CursorY, CursorX, CursorY - TextHeight, InitColor3(255 - GUI.BackgroundColor.R, 255 - GUI.BackgroundColor.G, 255 - GUI.BackgroundColor.B, GUI.BackgroundColor.A), GUI.AssignedRenderer);
     free(alloc);
 }
 
@@ -639,7 +618,7 @@ void DrawGUI(int i) {
     DrawRectangleRec(&GUI);
     DrawText(&GUI);
 
-    if (GUI.Type == IMAGELABEL || GUI.Type == IMAGEBUTTON)
+    if (GUI.Type == IMAGELABEL)
         DrawTextureEx(&GUI);
 
     for (int borderNum = 0; borderNum < GUI.BorderSize; borderNum++) {
@@ -648,10 +627,10 @@ void DrawGUI(int i) {
         SDL_Point bottomLeft = InitPoint(GUI.PositionX, GUI.PositionY + GUI.SizeY);
         SDL_Point bottomRight = InitPoint(GUI.PositionX + GUI.SizeX, GUI.PositionY + GUI.SizeY);
 
-        DrawLine(topLeft.x, topLeft.y + borderNum, topRight.x, topRight.y + borderNum, color); /* Top line */
-        DrawLine(topLeft.x + borderNum, topLeft.y, bottomLeft.x + borderNum, bottomLeft.y, color); /* Left line */
-        DrawLine(bottomRight.x, bottomRight.y - borderNum, bottomLeft.x, bottomRight.y - borderNum, color); /* Bottom line */
-        DrawLine(bottomRight.x - borderNum, bottomRight.y, topRight.x - borderNum, topRight.y,color); /* Right line */
+        DrawLine(topLeft.x, topLeft.y + borderNum, topRight.x, topRight.y + borderNum, color, GUI.AssignedRenderer); /* Top line */
+        DrawLine(topLeft.x + borderNum, topLeft.y, bottomLeft.x + borderNum, bottomLeft.y, color, GUI.AssignedRenderer); /* Left line */
+        DrawLine(bottomRight.x, bottomRight.y - borderNum, bottomLeft.x, bottomRight.y - borderNum, color, GUI.AssignedRenderer); /* Bottom line */
+        DrawLine(bottomRight.x - borderNum, bottomRight.y, topRight.x - borderNum, topRight.y, color, GUI.AssignedRenderer); /* Right line */
     }
 
     if (IsFocused == true && CurrentGUI_Focused > -1)
@@ -681,7 +660,7 @@ void RenderGUI() {
     }
 }
 
-int InitGUI(SDL_Renderer *renderer, SDL_Window *window) {
+int InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) {
     WHITE = InitColor3(255, 255, 255, 255);
     BLACK = InitColor3(0, 0, 0, 255);
     RED = InitColor3(230, 41, 55, 255);
@@ -690,23 +669,18 @@ int InitGUI(SDL_Renderer *renderer, SDL_Window *window) {
     GRAY = InitColor3(130, 130, 130, 255);
     VIOLET = InitColor3(135, 60, 190, 255);
 
-    if(!renderer) {
+    if(!Renderer) {
         GUI_INTERNAL_ERROR("[PUIUS GUI] No renderer found. Did you call the function correctly?\n");
-
-        return 1;
-    } else if (!window) {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] No window found. Did you call the function correctly?\n");
 
         return 1;
     }
 
-    globalRenderer = renderer;
-    globalWindow = window;
+    GlobalRenderer = Renderer;
 
-    Font = TTF_OpenFont("arial.ttf", 16);
+    Font = TTF_OpenFont(FontPath, FontSize);
 
     if (!Font) {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to load default font. Does arial.ttf exist in the running directory?\n");
+        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to load default font. Is the specified path correct?\n");
 
         exit(1);
     }
@@ -714,8 +688,8 @@ int InitGUI(SDL_Renderer *renderer, SDL_Window *window) {
     return true;
 }
 
-int ChangeDefaultFont(char *fontName, int fontSize) {
-    Font = TTF_OpenFont(fontName, fontSize);
+int ChangeDefaultFont(char *FontName, int FontSize) {
+    Font = TTF_OpenFont(FontName, FontSize);
 
     if (!Font) {
         GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to change font. Did you specify the right directory?\n");
