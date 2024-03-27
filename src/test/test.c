@@ -55,104 +55,78 @@ int main() {
     int CenterY = WINDOW_HEIGHT / 2;
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
-    InitGUI(renderer, window);
+    InitGUI(renderer, "arial.ttf", 16);
 
     ChangeDefaultFont(FontPath, 16);
 
     SDL_Texture *texture = NULL;
     texture = IMG_LoadTexture(renderer, ImagePath);
 
+    /* Label */
     struct GuiProperties *Label1 = PSConstructGUI(TEXTLABEL, 0, 0, 200, 20); /* Could make the arguments more flexible if needed */
-    struct GuiProperties *Button1 = PSConstructGUI(TEXTBUTTON, 0, 0, DEFAULT_ELEMENT_WIDTH, DEFAULT_ELEMENT_HEIGHT);
-    struct GuiProperties *Box1 = PSConstructGUI(TEXTBOX, 0, 0, 0, DEFAULT_ELEMENT_HEIGHT + 25);
-    struct GuiProperties *Image1 = PSConstructGUI(IMAGELABEL, 0, 0, 128, 128);
-    Frame = PSConstructGUI(TEXTLABEL, 0, 0, 100, 200);
-
-    /* Construct a list */
-    ConstructList(UILIST, Frame->BodyIndex, 0, 0);
-
-    /* *          * */
-    /* * LABEL #1 * */
-    /* *          * */
-    /* Label coordinates */
     Label1->PositionX = CenterX - Label1->SizeX / 2;
     Label1->PositionY = CenterY - Label1->SizeY + 15;
 
-    /* Label text-related properties */
     Label1->TextXAlignment = X_CENTER;
     Label1->TextYAlignment = Y_CENTER;
     Label1->Text = "PuiusGUI Example";
 
-    /* Label colors */
     Label1->BackgroundColor = BackgroundColor;
     Label1->TextColor = WHITE;
     Label1->BorderColor = WHITE;
 
-    /* Label miscellaneous */
     Label1->TextSize = 16;
 
-    /* *        * */
-    /* * BUTTON * */
-    /* *        * */
-    /* Button coordinates */
+    /* Button */
+    struct GuiProperties *Button1 = PSConstructGUI(BUTTON, 0, 0, DEFAULT_ELEMENT_WIDTH, DEFAULT_ELEMENT_HEIGHT);
     Button1->PositionX = CenterX - Button1->SizeX / 2;
     Button1->PositionY = CenterY - Button1->SizeY + 50;
 
-    /* Button text-related properties */
     Button1->Text = "LIST";
     Button1->TextXAlignment = X_CENTER;
     Button1->TextYAlignment = Y_CENTER;
 
-    /* Button colors */
+
     Button1->BackgroundColor = BackgroundColor;
     Button1->TextColor = WHITE;
     Button1->BorderColor = WHITE;
 
-    /* Button callbacks */
     Button1->MouseDown = ListFunction;
 
-    /* *       * */
-    /* * IMAGE * */
-    /* *       * */
-    /* Image coordinates */
-    Image1->PositionX = CenterX - Image1->SizeX / 2;
-    Image1->PositionY = CenterY - Image1->SizeY / 2 - 68;
-
-    /* Image miscellaneous */
-    Image1->BorderSize = 0;
-    Image1->Image = texture;
-    Image1->BackgroundColor = InitColor3(0, 0, 0, 0);
-
-    /* *     * */
-    /* * BOX * */
-    /* *     * */
-    /* Box coordinates */
+    /* Box */
+    struct GuiProperties *Box1 = PSConstructGUI(TEXTBOX, 0, 0, 0, DEFAULT_ELEMENT_HEIGHT + 25);
     Box1->SizeX = 100;
     Box1->PositionX = Button1->PositionX + Box1->SizeX;
     Box1->PositionY = Button1->PositionY;
 
-    /* Box colors */
     Box1->BackgroundColor = BackgroundColor;
     Box1->TextColor = WHITE;
     Box1->BorderColor = WHITE;
 
-    /* Box text-related properties */
     // Box1->TextWrapped = true;
     Box1->TextSize = 12;
 
-    /* *        * */
-    /* *  FRAME * */
-    /* *        * */
-    /* Frame coordinates */
+    /* Image */
+    struct GuiProperties *Image1 = PSConstructGUI(IMAGELABEL, 0, 0, 128, 128);
+    Image1->PositionX = CenterX - Image1->SizeX / 2;
+    Image1->PositionY = CenterY - Image1->SizeY / 2 - 68;
+
+    Image1->BorderSize = 0;
+    Image1->Image = texture;
+    Image1->BackgroundColor = InitColor3(0, 0, 0, 0);
+
+    /* Frame */
+    Frame = PSConstructGUI(TEXTLABEL, 0, 0, 100, 200);
     Frame->PositionX = (Button1->PositionX + Button1->SizeX / 2) - Frame->SizeX / 2;
     Frame->PositionY = Button1->PositionY + Button1->SizeY;
 
-    /* Frame Colors */
     Frame->BackgroundColor = BackgroundColor;
 
-    /* Frame miscellaneous */
     Frame->Visible = false;
     Frame->Text = "";
+
+    /* Construct a list */
+    ConstructList(UILIST, Frame->BodyIndex, 0, 0);
 
     for (int i = 0; i < 3; i++) {
         struct GuiProperties *NewLabel = PConstructGUI(TEXTLABEL, 0, 0);
