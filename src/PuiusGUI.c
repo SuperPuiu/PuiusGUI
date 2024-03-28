@@ -17,7 +17,11 @@ struct Color3 LIME;
 struct Color3 GRAY;
 struct Color3 VIOLET;
 
-SDL_Renderer *GlobalRenderer;
+struct Color3 DefaultBackgroundColor;
+struct Color3 DefaultTextColor;
+struct Color3 DefaultBorderColor;
+
+SDL_Renderer *AssignedRenderer;
 
 struct GuiProperties *GuiArray[100];
 struct ListProperties *ListArray[100];
@@ -77,7 +81,7 @@ void DrawRectangleRec(struct GuiProperties *GUI) {
     struct GuiProperties rectangle = *GUI;
 
     /* Set the color to the specified color, draw the rectangle, reset the color. */
-    if (GlobalRenderer) {
+    if (AssignedRenderer) {
         SDL_Color oldColor = {0, 0, 0, 0};
         SDL_GetRenderDrawColor(GUI->AssignedRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
@@ -93,13 +97,13 @@ void DrawRectangleRec(struct GuiProperties *GUI) {
         SDL_SetRenderDrawColor(GUI->AssignedRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
 
      } else {
-         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a rectangle without initializing GlobalRenderer.\n (use InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) to initialize GlobalRenderer)\n");
+         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a rectangle without initializing AssignedRenderer.\n (use InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) to initialize AssignedRenderer)\n");
     }
 }
 
 void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color, SDL_Renderer *AssignedRenderer) {
     /* Set the color to the specified color, draw the line, reset the color. */
-    if (GlobalRenderer) {
+    if (AssignedRenderer) {
         SDL_Color oldColor = {0, 0, 0, 0};
         SDL_GetRenderDrawColor(AssignedRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
@@ -107,14 +111,14 @@ void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color, S
         SDL_RenderDrawLine(AssignedRenderer, StartX, StartY, EndX, EndY);
         SDL_SetRenderDrawColor(AssignedRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
     } else {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a line without initializing GlobalRenderer.\n (use InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) to initialize GlobalRenderer)\n");
+        GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a line without initializing AssignedRenderer.\n (use InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) to initialize AssignedRenderer)\n");
     }
 }
 
 void DrawText(struct GuiProperties *GUI) {
     struct GuiProperties gui = *GUI;
 
-    if (GlobalRenderer) {
+    if (AssignedRenderer) {
         SDL_Color oldColor = {0, 0, 0, 0};
         SDL_GetRenderDrawColor(GUI->AssignedRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
@@ -130,7 +134,7 @@ void DrawTextureEx(struct GuiProperties *GUI) {
     if (!Rectangle.Image)
         GUI_INTERNAL_ERROR("[PUIUS GUI] GUI element contains no image property! Did you forget to add the image pointer?\n");
 
-    if (GlobalRenderer) {
+    if (AssignedRenderer) {
         SDL_Color OldColor = {0, 0, 0, 0};
         SDL_GetRenderDrawColor(GUI->AssignedRenderer, &OldColor.r, &OldColor.g, &OldColor.b, &OldColor.a);
 
@@ -161,7 +165,7 @@ void DrawTextureEx(struct GuiProperties *GUI) {
         SDL_SetRenderDrawColor(GUI->AssignedRenderer, OldColor.r, OldColor.g, OldColor.b, OldColor.a);
 
      } else {
-         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a texture without initializing the library. (use InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) to initialize GlobalRenderer)\n");
+         GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a texture without initializing the library. (use InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) to initialize AssignedRenderer)\n");
     }
 }
 
@@ -398,13 +402,14 @@ void UpdateGUI(int GUI_Index) {
         GuiArray[GUI_Index]->TextFits = 1;
 
     /* Inherit parent properties */
-
     if (GUI.Parent > -1)
         GuiArray[GUI_Index]->Visible = GuiArray[GUI.Parent]->Visible;
 
     /* Ending */
-    if (strcmp(error, "empty") != 0)
+    if (strcmp(error, "empty") != 0) {
         GUI_INTERNAL_ERROR(error);
+        GUI_INTERNAL_ERROR(SDL_GetError());
+    }
 
     GuiArray[GUI_Index]->TextureText = Message;
     SDL_FreeSurface(surfaceMessage);
@@ -490,9 +495,9 @@ struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width,
         newGUI->TextScaled = false;
         newGUI->MultiLine = false;
 
-        newGUI->TextColor = BLACK;
-        newGUI->BackgroundColor = WHITE;
-        newGUI->BorderColor = BLACK;
+        newGUI->TextColor = DefaultTextColor;
+        newGUI->BackgroundColor = DefaultBackgroundColor;
+        newGUI->BorderColor = DefaultBorderColor;
 
         /* Ensure that no pointer is left which could trigger an error */
         newGUI->MouseEnter = defaultCallback;
@@ -527,12 +532,13 @@ struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width,
         } else if (GUI == IMAGELABEL) {
             newGUI->TextEditable = false;
             newGUI->Text = "";
-        }
+        } else if (GUI == SCROLLFRAME)
+            newGUI->TextEditable = false;
 
         SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Font, newGUI->Text, SDL_BLACK);
-        SDL_Texture *Message = SDL_CreateTextureFromSurface(GlobalRenderer, surfaceMessage);
+        SDL_Texture *Message = SDL_CreateTextureFromSurface(AssignedRenderer, surfaceMessage);
 
-        newGUI->AssignedRenderer = GlobalRenderer;
+        newGUI->AssignedRenderer = AssignedRenderer;
         newGUI->TextureText = Message;
         newGUI->Font = Font;
 
@@ -669,18 +675,24 @@ int InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) {
     GRAY = InitColor3(130, 130, 130, 255);
     VIOLET = InitColor3(135, 60, 190, 255);
 
+    DefaultTextColor = BLACK;
+    DefaultBorderColor = BLACK;
+    DefaultBackgroundColor = BLACK;
+
     if(!Renderer) {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] No renderer found. Did you call the function correctly?\n");
+        GUI_INTERNAL_ERROR("[PUIUS GUI] No render given. Did you call the function correctly?\n");
 
         return 1;
     }
 
-    GlobalRenderer = Renderer;
+    AssignedRenderer = Renderer;
 
     Font = TTF_OpenFont(FontPath, FontSize);
 
     if (!Font) {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to load default font. Is the specified path correct?\n");
+        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to load default font. SDL error:");
+        GUI_INTERNAL_ERROR(SDL_GetError());
+        GUI_INTERNAL_ERROR("\n");
 
         exit(1);
     }
@@ -692,7 +704,9 @@ int ChangeDefaultFont(char *FontName, int FontSize) {
     Font = TTF_OpenFont(FontName, FontSize);
 
     if (!Font) {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to change font. Did you specify the right directory?\n");
+        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to load the new font. SDL error:");
+        GUI_INTERNAL_ERROR(SDL_GetError());
+        GUI_INTERNAL_ERROR("\n");
 
         return false;
     }
