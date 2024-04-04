@@ -36,8 +36,13 @@ VERSION 0.0.6:
 * Fixed MultiLine bug;
 * Fixed MouseEnter and MouseLeave callbacks being inverted;
 * Fixed Active property of GuiProperties;
+* Fixed .Pressed not being set to false when the click is not down;
+* Added DefaultBackgroundColor, DefaultTextColor and DefaultBorderColor;
 * Improved the test.c file;
+* Improved error feedback by outputting SDL_GetError() string as well;
+* Improved InitGUI() function by adding char *FontPath and int FontSize as parameters. Removed the window requirement.
 * Renamed some GUI_TYPE elements;
+* Renamed globalRenderer to AssignedRenderer and declared it as extern;
 * Removed ImageButton;
 * Removed default hover callbacks;
 */
@@ -108,10 +113,15 @@ extern struct Color3 LIME;
 extern struct Color3 GRAY;
 extern struct Color3 VIOLET;
 
+extern struct Color3 DefaultBackgroundColor;
+extern struct Color3 DefaultTextColor;
+extern struct Color3 DefaultBorderColor;
+
 /* Pre-made Color3 structures */
 struct GuiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
+  int CavanasX, CavanasY;
 
   int Parent;
   int Zindex;
@@ -135,13 +145,14 @@ struct GuiProperties {
   bool Pressed;
   bool Active;
   bool Hovered;
-  bool TextEditable;
   bool Focused;
+  bool HorizontalScrolling;
 
   bool MultiLine;
   bool TextFits;
   bool TextScaled;
   bool TextWrapped;
+  bool TextEditable;
   int TextSize;
 
   void (*MouseDown)(int GuiIndex);
@@ -189,6 +200,7 @@ void RenderGUI();
 void UpdateGUI(int GUI_Index);
 void UpdateAllGUI();
 
+extern SDL_Renderer *AssignedRenderer;
 extern struct GuiProperties *GuiArray[100];
 extern struct ListProperties *ListArray[100];
 extern int LastGUI_item;
