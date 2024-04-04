@@ -421,49 +421,52 @@ void UpdateAllGUI() {
 }
 
 void HandleGUI(int CurrentGUI) {
-    /* TODO: Rework the function */
-
-    struct GuiProperties GUI = *GuiArray[CurrentGUI];
     int isColliding = CollosionRectPoint(GuiArray[CurrentGUI], MouseX, MouseY);
 
-    if ((isColliding && GUI.Type == BUTTON) || (isColliding && GUI.Type == TEXTBOX)) {
-        if (GuiArray[CurrentGUI]->Hovered == false && GuiArray[CurrentGUI]->Active == true)
-            GuiArray[CurrentGUI]->MouseEnter(CurrentGUI);
-
-        GuiArray[CurrentGUI]->Hovered = true;
+    if (isColliding == true) {
+        if (GuiArray[CurrentGUI]->Type == BUTTON || GuiArray[CurrentGUI]->Type == TEXTBOX) {
+            if (GuiArray[CurrentGUI]->Hovered == false && GuiArray[CurrentGUI]->Active == true) {
+                GuiArray[CurrentGUI]->Hovered = true;
+                GuiArray[CurrentGUI]->MouseEnter(CurrentGUI);
+            }
 
         if (LeftButtonDown) {
             /* Trigger MouseDown callback */
-            if (GuiArray[CurrentGUI]->Pressed == false && GuiArray[CurrentGUI]->Active == true)
-                GuiArray[CurrentGUI]->MouseDown(CurrentGUI);
+                if (GuiArray[CurrentGUI]->Pressed == false && GuiArray[CurrentGUI]->Active == true)
+                    GuiArray[CurrentGUI]->MouseDown(CurrentGUI);
 
-            /* Change Property */
-            GuiArray[CurrentGUI]->Pressed = true;
-            Cursor = strlen(GuiArray[CurrentGUI]->Text);
+                /* Change Property */
+                GuiArray[CurrentGUI]->Pressed = true;
+                Cursor = strlen(GuiArray[CurrentGUI]->Text);
 
-            if (IsFocused && GUI.Type == TEXTBOX) {
-                CurrentGUI_Focused = CurrentGUI;
-            } else if (!IsFocused) {
-                SDL_StartTextInput();
+                if (IsFocused && GuiArray[CurrentGUI]->Type == TEXTBOX)
+                    CurrentGUI_Focused = CurrentGUI;
+                else if (!IsFocused) {
+                    SDL_StartTextInput();
 
-                CurrentGUI_Focused = CurrentGUI;
-                IsFocused = true;
-                GuiArray[CurrentGUI]->Focused = true;
+                    CurrentGUI_Focused = CurrentGUI;
+                    IsFocused = true;
+                    GuiArray[CurrentGUI]->Focused = true;
+                }
+
+            } else {
+                if (GuiArray[CurrentGUI]->Pressed == true) {
+                    GuiArray[CurrentGUI]->Pressed = false;
+                    GuiArray[CurrentGUI]->MouseUp(CurrentGUI);
+                }
             }
-
         }
-        else {
-            GuiArray[CurrentGUI]->Pressed = false;
+    } else {
+        if (GuiArray[CurrentGUI]->Type == BUTTON || GuiArray[CurrentGUI]->Type == TEXTBOX) {
+            if (GuiArray[CurrentGUI]->Hovered == true && GuiArray[CurrentGUI]->Active == true) {
+                GuiArray[CurrentGUI]->MouseLeave(CurrentGUI);
+                GuiArray[CurrentGUI]->Hovered = false;
+                GuiArray[CurrentGUI]->Pressed = false;
+            }
         }
-    }
-    else if ((!isColliding && GUI.Type == BUTTON) || (!isColliding && GUI.Type == TEXTBOX)) {
-        if (GuiArray[CurrentGUI]->Hovered == true && GuiArray[CurrentGUI]->Active == true)
-            GuiArray[CurrentGUI]->MouseLeave(CurrentGUI);
-
-        GuiArray[CurrentGUI]->Hovered = false;
-        GuiArray[CurrentGUI]->Pressed = false;
     }
 }
+
 
 struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width, int Height) {
         LastGUI_item += 1;
