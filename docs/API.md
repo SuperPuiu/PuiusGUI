@@ -1,47 +1,47 @@
 `READ ONLY` properties should be read from only. Changing them may result in undefined behaviour.
 # GUI Properties
 ## General Properties
-### PositionX and PositionY `int`
+### _PositionX and PositionY `int`_
 Two int values used to specify the positions for the GUI element.
 
-### SizeX and SizeY `int`
+### _SizeX and SizeY `int`_
 Two int values used to specify the positions for the GUI element. Some elements ignore this property. The default values for SizeX is 75 and for SizeY 25, which can be changed by modifying `DEFAULT_ELEMENT_WIDTH` respectively `DEFAULT_ELEMENT_HEIGHT`
 
-### Parent `int`
+### _Parent `int`_
 An int value used to specify under which element is the GUI. Setting the value to anything but -1 will result in the element to inherit some properties from the parent element. Setting the value to anything higher than `LastGUI_Item` 
 will result in it being ignored.
-### Zindex `int`
-An int value used to specify the render priority. Setting the zindex to anythung under 1 will result in the GUI not being rendered. The maximum zindex supported is 40.
-### BorderSize `int`
+### _Zindex `int`_
+An int value used to specify the render priority. Setting the zindex to anything under 1 will result in the GUI not being rendered. The maximum zindex supported is 40.
+### _BorderSize `int`_
 An int value used to specify what is the size of the GUI element border. Some elements ignore this property.
-### OutlineSize `int`
+### _OutlineSize `int`_
 An int value used to specify what is the size of the text's outline. Some elements ignore this property.
-### Visible `bool`
+### _Visible `bool`_
 A bool value used to specify if the GUI element will be rendered or not. 
-### Pressed `bool` `READ ONLY`
+### _Pressed `bool` `READ ONLY`_
 A bool value which is automatically set to true if the button is being pressed. The bool is set to false if otherwise.
-### Active `bool`
+### _Active `bool`_
 A bool value used by the library to specify if the GUI element will fire callbacks. *To be implemented in 0.0.6*
-### Hovered `bool` `READ ONLY`
+### _Hovered `bool` `READ ONLY`_
 A bool value used by the library to specify if the GUI is currently being hovered or not.
-### MultiLine `bool`
+### _MultiLine `bool`_
 A bool value used by `TextBox` elements to determine whenever `FocusLost` should be called or not after pressing enter.
-### BodyIndex `int` `READ ONLY`
+### _BodyIndex `int` `READ ONLY`_
 An int value which is automatically assigned when constructing a new GUI element. It represents the index where it is located in `GuiArray`.
 
 ## Text Properties
 
-### TextEditable `bool`
+### _TextEditable `bool`_
 A bool value used to specify if the TextLabel or TextBox has editable text or not. Setting this to false for a GUI element which the user is editing will stop the text editing process.
-### TextFits `bool` `READ ONLY`
+### _TextFits `bool` `READ ONLY`_
 A bool value used by the library to specify if the text fits or not in the boundaries of the GUI element. Should not be changed manually.
-### TextScaled `bool`
+### _TextScaled `bool`_
 A bool value used to specify if the library will handle automatically the text size or not. Setting this to true will make the library ignore TextSize property. *To be implemented in 0.0.5*
-### TextSize `int`
+### _TextSize `int`_
 An int value used to specify the size of the text. The value will be ignored if TextSize is enabled.
-### TextureText `READ ONLY`
+### _TextureText `READ ONLY`_
 A `SDL_Texture` structure used by the library to render text. **Do not manually change.**
-### TextRectangle `READ ONLY`
+### _TextRectangle `READ ONLY`_
 A `SDL_Rect` structure used by the library for different operations and text rendering. **Do not manually change.**
 ### Font `TTF_Font`
 A `TTF_Font` value used by SDL_ttf for storing fonts. The font is automatically assigned by the constructor when built. Alternatively, it can be changed manually if needed.
