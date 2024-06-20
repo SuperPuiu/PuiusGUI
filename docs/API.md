@@ -1,53 +1,53 @@
 `READ ONLY` properties should be read from only. Changing them may result in undefined behaviour.
 # GUI Properties
 ## General Properties
-### _PositionX and PositionY `int`_
-Two int values used to specify the positions for the GUI element.
+### PositionX and PositionY `int`
+Two int values used to specify the positions for the GUI element. The position values are influenced by the `Parent` of the element and if the parent contains an `UIList`.
 
-### _SizeX and SizeY `int`_
+### SizeX and SizeY `int`
 Two int values used to specify the positions for the GUI element. Some elements ignore this property. The default values for SizeX is 75 and for SizeY 25, which can be changed by modifying `DEFAULT_ELEMENT_WIDTH` respectively `DEFAULT_ELEMENT_HEIGHT`
 
-### _Parent `int`_
+### Parent `int`
 An int value used to specify under which element is the GUI. Setting the value to anything but -1 will result in the element to inherit some properties from the parent element. Setting the value to anything higher than `LastGUI_Item` 
 will result in it being ignored.
-### _Zindex `int`_
+### Zindex `int`
 An int value used to specify the render priority. Setting the zindex to anything under 1 will result in the GUI not being rendered. The maximum zindex supported is 40.
-### _BorderSize `int`_
+### BorderSize `int`
 An int value used to specify what is the size of the GUI element border. Some elements ignore this property.
-### _OutlineSize `int`_
+### OutlineSize `int`
 An int value used to specify what is the size of the text's outline. Some elements ignore this property.
-### _Visible `bool`_
+### Visible `bool`
 A bool value used to specify if the GUI element will be rendered or not. 
-### _Pressed `bool` `READ ONLY`_
+### Pressed `bool` `READ ONLY`
 A bool value which is automatically set to true if the button is being pressed. The bool is set to false if otherwise.
-### _Active `bool`_
-A bool value used by the library to specify if the GUI element will fire callbacks. *To be implemented in 0.0.6*
-### _Hovered `bool` `READ ONLY`_
+### Active `bool`
+A bool value used by the library to specify if the GUI element will fire callbacks.
+### Hovered `bool` `READ ONLY`
 A bool value used by the library to specify if the GUI is currently being hovered or not.
-### _MultiLine `bool`_
+### MultiLine `bool`
 A bool value used by `TextBox` elements to determine whenever `FocusLost` should be called or not after pressing enter.
-### _BodyIndex `int` `READ ONLY`_
-An int value which is automatically assigned when constructing a new GUI element. It represents the index where it is located in `GuiArray`.
+### BodyIndex `int` `READ ONLY`
+An int value which is automatically assigned when constructing a new GUI element. It represents the index where it is located in `GuiArray`
 
 ## Text Properties
 
-### _TextEditable `bool`_
+### TextEditable `bool`
 A bool value used to specify if the TextLabel or TextBox has editable text or not. Setting this to false for a GUI element which the user is editing will stop the text editing process.
-### _TextFits `bool` `READ ONLY`_
+### TextFits `bool` `READ ONLY`
 A bool value used by the library to specify if the text fits or not in the boundaries of the GUI element. Should not be changed manually.
-### _TextScaled `bool`_
-A bool value used to specify if the library will handle automatically the text size or not. Setting this to true will make the library ignore TextSize property. *To be implemented in 0.0.5*
-### _TextSize `int`_
+### TextScaled `bool`
+A bool value used to specify if the library will handle automatically the text size or not. Setting this to true will make the library ignore TextSize property. *To be implemented*
+### TextSize `int`
 An int value used to specify the size of the text. The value will be ignored if TextSize is enabled.
-### _TextureText `READ ONLY`_
-A `SDL_Texture` structure used by the library to render text. **Do not manually change.**
-### _TextRectangle `READ ONLY`_
-A `SDL_Rect` structure used by the library for different operations and text rendering. **Do not manually change.**
+### TextureText `READ ONLY`
+A `SDL_Texture` structure used by the library to render text. The value is updated by the `UpdateGUI` function. **Do not manually change.**
+### TextRectangle `READ ONLY`
+A `SDL_Rect` structure used by the library for different operations and text rendering. The value is updated by the `UpdateGUI` function. **Do not manually change.**
 ### Font `TTF_Font`
-A `TTF_Font` value used by SDL_ttf for storing fonts. The font is automatically assigned by the constructor when built. Alternatively, it can be changed manually if needed.
+A `TTF_Font` value used by SDL_ttf for rendering fonts. The font is automatically assigned by the constructor when built based on the local `Font` variable. Alternatively, it can be changed manually if needed.
 
 ### Text `char *`
-A `char*` (string) used by `TextLabel` and `TextBox` for rendering text. It should be noted that `TextBox` has text `malloc()`ed when constructed and `TextLabel` isn't.
+A `char*` (string) used by `TextLabel` and `TextBox` for rendering text. It should be noted that `TextBox` has text `malloc()`ed when constructed and `TextLabel` doesn't. Although it is used mainly by the mentioned elements, it can be used with other elements (such as `ImageLabel`) too, though it has to be manually set.
 
 ## Color3 Properties
 ### BackgroundColor `Color3`
@@ -121,17 +121,17 @@ An important function used to automatically update an element whose index is spe
 A function used to update all buttons at once. This function uses a for loop which begins from 0 to `LastGUI_Item`, calling `UpdateGUI`.
 
 ### ChangeDefaultFont(char *FontName, int FontSize) `int Function`
-A function used to change the default font. `*FontName` should be a pointer to the location of the file.
+A function used to change the default font (aka the `Font` variable). `*FontName` should be a pointer to the location of the file.
 
 ## Constructors
 ### PConstruct(enum GUI_TYPE, int PositionX, int PositionY) `struct GuiProperties* Function`
 A core function which constructs a new GUI element based on the given enum and positions. See `Type` values for more information.
 
 ### PSConstruct(enum GUI_TYPE, int PositionX, int PositionY, int SizeX, int SizeY) `struct GuiProperties* Function`
-A core function which constructs a new GUI element based on the given enum and coordinates. See `Type` values for more information.
+A core function which constructs a new GUI element based on the given enum and coordinates for sizes and positions. See `Type` values for more information.
 
 ### ConstructList(LIST_TYPE Type, int Parent, int PaddingX, int PaddingY) `struct ListProperties*`
-A function which constructs a new list based on the given LIST_TYPE enum and additional parameters.
+A function which constructs a new list based on the given LIST_TYPE enum and additional parameters. Lists are placed in another array than other elements.
 
 ### InitColor3(int R, int G, int B, int A) `struct Color3 Function`
 Function used to construct more easily `Color3` structs. It returns a structure, and accepts 4 arguments.
@@ -156,4 +156,4 @@ An int set by the library whenever the user is editing a textbox. Do not rely on
 A bool array used by `ProcessInput()` function to store pressed keys and other important inputs.
 
 ### Running `bool`
-Used by the `ProcessInputs()` function. The value is set to 0 whenever the `SDL_QUIT` event is encountered. Should be used for creating the game's loop.
+Used by the `ProcessInputs()` function. The value is set to false whenever the `SDL_QUIT` event is encountered. Should be used for creating the game's loop.
