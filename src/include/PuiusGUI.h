@@ -33,18 +33,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 VERSION 0.0.6:
+Additions:
+* Added DefaultBackgroundColor, DefaultTextColor and DefaultBorderColor;
+* Added default alignments for text which can be set;
+* Added ScrollingFrame;
+* Added AssignedRenderer to GUI elements;
+
+Alterations:
 * Fixed MultiLine bug;
 * Fixed MouseEnter and MouseLeave callbacks being inverted;
 * Fixed Active property of GuiProperties;
 * Fixed .Pressed not being set to false when the click is not down;
-* Added DefaultBackgroundColor, DefaultTextColor and DefaultBorderColor;
+* Fixed events firing for elements which had visibility disabled;
+* Improved the code of PuiusGUI.c;
 * Improved the test.c file;
 * Improved error feedback by outputting SDL_GetError() string as well;
 * Improved InitGUI() function by adding char *FontPath and int FontSize as parameters. Removed the window requirement.
 * Renamed some GUI_TYPE elements;
 * Renamed globalRenderer to AssignedRenderer and declared it as extern;
+* Renamed BodyIndex to ElementIndex;
+* Renamed TextButton to Button;
+* Declared MouseX and MouseY as extern;
+* Switched Text and Image priorities, making it so Text renders on top of Image;
+* Modified DrawRectangleRec to allow a more general use rather than only drawing backgrounds for GUI elements;
+* Modified UpdateGUI's error outputting to be more efficient with resources;
+
+Removed:
 * Removed ImageButton;
 * Removed default hover callbacks;
+
 */
 
 #ifndef PUIUS_GUI
@@ -121,11 +138,12 @@ extern struct Color3 DefaultBorderColor;
 struct GuiProperties {
   int PositionX; int PositionY;
   int SizeX; int SizeY;
-  int CavanasX, CavanasY;
+  int CavnasX, CavnasY;
 
   int Parent;
   int Zindex;
-  int BodyIndex;
+  int ElementIndex;
+  int CavnasSpeed;
 
   int BorderSize;
   int OutlineSize;
@@ -148,6 +166,7 @@ struct GuiProperties {
   bool Focused;
   bool HorizontalScrolling;
 
+  bool ScrollActive;
   bool MultiLine;
   bool TextFits;
   bool TextScaled;
@@ -182,7 +201,7 @@ struct ListProperties {
     SORT_ORDER SortOrder;
 };
 
-void DrawRectangleRec(struct GuiProperties *GUI);
+void DrawRectangleRec(SDL_Rect Rectangle, struct Color3 Color, SDL_Renderer *Renderer);
 
 int InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize);
 int ChangeDefaultFont(char *FontName, int FontSize);
@@ -197,7 +216,7 @@ struct GuiProperties* PConstructGUI(GUI_TYPE GUI, int X, int Y);
 struct ListProperties* ConstructList(LIST_TYPE Type, int Parent, int PaddingX, int PaddingY);
 
 void RenderGUI();
-void UpdateGUI(int GUI_Index);
+void UpdateGUI(int GUI_Index, bool ClearIndexes);
 void UpdateAllGUI();
 
 extern SDL_Renderer *AssignedRenderer;
@@ -206,6 +225,7 @@ extern struct ListProperties *ListArray[100];
 extern int LastGUI_item;
 extern int LastList;
 extern int CurrentGUI_Focused;
+extern int MouseY, MouseX;
 extern bool Inputs[258];
 extern bool Running;
 extern bool IsFocused;
