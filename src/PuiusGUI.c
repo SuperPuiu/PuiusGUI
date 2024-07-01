@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include "include/PuiusGUI.h"
 
@@ -27,76 +28,93 @@ SDL_Renderer *AssignedRenderer;
 
 struct GuiProperties *GuiArray[100];
 struct ListProperties *ListArray[100];
+
 bool Inputs[258];
 bool Running = true;
+bool LeftButtonDown = false;
+bool IsFocused;
 
 int CurrentList = -1, LastElement = -1;
-
 int LastList = -1;
 int LastGUI_item = -1;
 int TabSize = 4; /* How many spaces are added for a tab */
+int MouseY, MouseX;
+int CurrentGUI_Focused = -1;
+size_t Cursor = 0;
 
 TTF_Font *Font;
-
-int MouseY, MouseX;
-bool LeftButtonDown = false;
-
-// Textbox values
-bool IsFocused = false;
-size_t Cursor = 0;
-int CurrentGUI_Focused = -1;
 
 void defaultCallback() {} // Used for ConstructGUI()
 
 struct Color3 InitColor3(int R, int G, int B, int A) {
-    struct Color3 Color;
+  struct Color3 Color;
 
-    Color.R = R;
-    Color.B = B;
-    Color.G = G;
-    Color.A = A;
+  Color.R = R;
+  Color.B = B;
+  Color.G = G;
+  Color.A = A;
 
-    return Color;
+  return Color;
+}
+
+bool CollisionGUIs(struct GuiProperties *GUI_1, struct GuiProperties *GUI_2) {
+  // return !(r1.x + r1.width < r2.x || r1.y + r1.height < r2.y || r1.x > r2.x + r2.width || r1.y > r2.y + r2.height);
+  return !(GUI_1->PositionX + GUI_1->SizeX < GUI_2->PositionX || GUI_1->PositionY + GUI_1->SizeY < GUI_2->PositionY || GUI_1->PositionX > GUI_2->PositionX + GUI_2->SizeX || GUI_1->PositionY > GUI_2->PositionY + GUI_2->SizeY);
+}
+
+SDL_Rect CollisionArea(struct GuiProperties *GUI_1, struct GuiProperties *GUI_2) {
+  int LeftX, RightX, TopY, BottomY;
+  SDL_Rect NewRectangle;
+
+  LeftX = fmax(GUI_1->PositionX, GUI_2->PositionY);
+  RightX = fmin(GUI_1->PositionX + GUI_1->SizeX, GUI_2->PositionX + GUI_2->SizeX);
+  TopY = fmax(GUI_1->PositionY, GUI_2->PositionY);
+  BottomY = fmin(GUI_1->PositionY + GUI_1->SizeY, GUI_2->PositionY + GUI_2->SizeY);
+  
+  // NewRectangle = {LeftX, TopY, RightX - Left, BottomY - TopY};
+  NewRectangle.x = LeftX;
+  NewRectangle.y = TopY;
+  NewRectangle.w = RightX - LeftX;
+  NewRectangle.h = BottomY - TopY;
+
+  return NewRectangle;
 }
 
 SDL_Point InitPoint(int x, int y) {
-    SDL_Point point;
-    point.x = x;
-    point.y = y;
+  SDL_Point point;
+  point.x = x;
+  point.y = y;
 
-    return point;
+  return point;
 }
 
 int CollosionRectPoint(struct GuiProperties *GUI, int PointX, int PointY) {
-    struct GuiProperties Rect = *GUI;
+  struct GuiProperties Rect = *GUI;
 
-    if (PointX > Rect.PositionX && PointX < Rect.PositionX + Rect.SizeX && PointY > Rect.PositionY && PointY < Rect.PositionY + Rect.SizeY)
-            return true;
-        return false;
+  if (PointX > Rect.PositionX && PointX < Rect.PositionX + Rect.SizeX && PointY > Rect.PositionY && PointY < Rect.PositionY + Rect.SizeY)
+    return true;
+  return false;
 }
 
 void GUI_INTERNAL_ERROR(const char *error) {
-    #ifndef SUPPRESS_GUI_ERRORS
-    printf("\x1b[31m%s\x1b[0m", error);
-    #endif
+#ifndef SUPPRESS_GUI_ERRORS
+  printf("\x1b[31m%s\x1b[0m", error);
+  printf("%s\n", SDL_GetError());
+#endif
 }
 
-void DrawRectangleRec(struct GuiProperties *GUI) {
-  struct GuiProperties rectangle = *GUI;
-
+void DrawRectangleRec(SDL_Rect Rectangle, struct Color3 Color, SDL_Renderer *Renderer) {
   /* Set the color to the specified color, draw the rectangle, reset the color. */
-  if (rectangle.AssignedRenderer) {
+  if (Renderer) {
     SDL_Color oldColor = {0, 0, 0, 0};
-    SDL_GetRenderDrawColor(GUI->AssignedRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
+    SDL_GetRenderDrawColor(Renderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
-    SDL_Rect newRect = {rectangle.PositionX, rectangle.PositionY, rectangle.SizeX, rectangle.SizeY};
-
-    SDL_SetRenderDrawColor(GUI->AssignedRenderer, rectangle.BackgroundColor.R, rectangle.BackgroundColor.G, rectangle.BackgroundColor.B, rectangle.BackgroundColor.A);
-    SDL_RenderFillRect(GUI->AssignedRenderer, &newRect);
-    SDL_SetRenderDrawColor(GUI->AssignedRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
+    SDL_SetRenderDrawColor(Renderer, Color.R, Color.G, Color.B, Color.A);
+    SDL_RenderFillRect(Renderer, &Rectangle);
+    SDL_SetRenderDrawColor(Renderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
 
   } else
-    GUI_INTERNAL_ERROR("[PUIUS GUI] Unable to DrawRectangleRec without GUI.AssignedRenderer. Did you initialize the library?\n");
+  GUI_INTERNAL_ERROR("[PUIUS GUI] Unable to DrawRectangleRec without GUI->AssignedRenderer. Did you initialize the library?\n");
 }
 
 void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color, SDL_Renderer *AssignedRenderer) {
@@ -110,22 +128,20 @@ void DrawLine(int StartX, int StartY, int EndX, int EndY, struct Color3 Color, S
 }
 
 void DrawText(struct GuiProperties *GUI) {
-    struct GuiProperties gui = *GUI;
+  struct GuiProperties gui = *GUI;
 
-    if (GUI->AssignedRenderer) {
-        SDL_Color oldColor = {0, 0, 0, 0};
-        SDL_GetRenderDrawColor(GUI->AssignedRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
+  if (GUI->AssignedRenderer) {
+    SDL_Color oldColor = {0, 0, 0, 0};
+    SDL_GetRenderDrawColor(GUI->AssignedRenderer, &oldColor.r, &oldColor.g, &oldColor.b, &oldColor.a);
 
-        SDL_SetRenderDrawColor(GUI->AssignedRenderer, gui.TextColor.R, gui.TextColor.G, gui.TextColor.B, gui.TextColor.A);
-        SDL_RenderCopy(GUI->AssignedRenderer, gui.TextureText, NULL, &gui.TextRectangle);
-        SDL_SetRenderDrawColor(GUI->AssignedRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
-    }
+    SDL_SetRenderDrawColor(GUI->AssignedRenderer, gui.TextColor.R, gui.TextColor.G, gui.TextColor.B, gui.TextColor.A);
+    SDL_RenderCopy(GUI->AssignedRenderer, gui.TextureText, NULL, &gui.TextRectangle);
+    SDL_SetRenderDrawColor(GUI->AssignedRenderer, oldColor.r, oldColor.g, oldColor.b, oldColor.a);
+  }
 }
 
 void DrawTextureEx(struct GuiProperties *GUI) {
-  struct GuiProperties Rectangle = *GUI;
-
-  if (!Rectangle.Image)
+  if (!GUI->Image)
     GUI_INTERNAL_ERROR("[PUIUS GUI] GUI element contains no image property! Did you forget to add the image pointer?\n");
 
   if (GUI->AssignedRenderer) {
@@ -134,112 +150,120 @@ void DrawTextureEx(struct GuiProperties *GUI) {
 
     int Texture_x = 0, Texture_y = 0;
 
-    if (SDL_QueryTexture(Rectangle.Image, NULL, NULL, &Texture_x, &Texture_y) != 0) {
+    if (SDL_QueryTexture(GUI->Image, NULL, NULL, &Texture_x, &Texture_y) != 0)
       GUI_INTERNAL_ERROR("[PUIUS GUI] SDL_QueryTexture failed! SDL Error:");
-      GUI_INTERNAL_ERROR(SDL_GetError());
-      GUI_INTERNAL_ERROR("\n");
-    }
 
-    SDL_Rect NewRect = {Rectangle.PositionX, Rectangle.PositionY, Rectangle.SizeX, Rectangle.SizeY};
-
+    SDL_Rect NewRect = {GUI->PositionX, GUI->PositionY, GUI->SizeX, GUI->SizeY};
     SDL_Rect Part = {0, 0, Texture_x, Texture_y};
 
-    SDL_SetRenderDrawColor(GUI->AssignedRenderer, Rectangle.BackgroundColor.R, Rectangle.BackgroundColor.G, Rectangle.BackgroundColor.B, Rectangle.BackgroundColor.A);
-    SDL_RenderCopyEx(GUI->AssignedRenderer, Rectangle.Image, &Part, &NewRect, 0, NULL, SDL_FLIP_NONE);
+    SDL_SetRenderDrawColor(GUI->AssignedRenderer, GUI->BackgroundColor.R, GUI->BackgroundColor.G, GUI->BackgroundColor.B, GUI->BackgroundColor.A);
+    SDL_RenderCopyEx(GUI->AssignedRenderer, GUI->Image, &Part, &NewRect, 0, NULL, SDL_FLIP_NONE);
     SDL_SetRenderDrawColor(GUI->AssignedRenderer, OldColor.r, OldColor.g, OldColor.b, OldColor.a);
 
   } else
-    GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a texture without an AssignedRenderer. Have you initialized the library?\n");
+  GUI_INTERNAL_ERROR("[PUIUS GUI] Tried drawing a texture without an AssignedRenderer. Have you initialized the library?");
 }
 
 void WriteToTextBox(char *str) {
-    if(IsFocused == false)
-        return;
+  if(IsFocused == false)
+    return;
 
-    if(GuiArray[CurrentGUI_Focused]->TextEditable == false)
-        return;
-    // printf("%i\n", Cursor);
-    struct GuiProperties *GUI = GuiArray[CurrentGUI_Focused];
+  if(GuiArray[CurrentGUI_Focused]->TextEditable == false)
+    return;
+  // printf("%i\n", Cursor);
+  struct GuiProperties *GUI = GuiArray[CurrentGUI_Focused];
 
-    int textLength = strlen(GUI->Text);
-    char *alloc;
+  int textLength = strlen(GUI->Text);
+  char *alloc;
 
-    alloc = malloc(textLength * 2);
+  alloc = malloc(textLength * 2);
 
-    if (alloc == NULL) {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to allocate memory for new string when writing to the focused textbox.\n");
-        exit(1);
-    }
+  if (alloc == NULL) {
+    GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to allocate memory for new string when writing to the focused textbox.");
+    UninitGUI();
+    exit(1);
+  }
 
-    if (strcmp(str, "ENTER") == 0) {
-        if (GUI->MultiLine == false) {
-            strcpy(alloc, GUI->Text);
-            GuiArray[CurrentGUI_Focused]->FocusLost(CurrentGUI_Focused);
-            IsFocused = false;
+  if (strcmp(str, "ENTER") == 0) {
+    if (GUI->MultiLine == false) {
+      /* If MultiLine is false, just unfocus from the box. */
+      strcpy(alloc, GUI->Text);
+      GuiArray[CurrentGUI_Focused]->FocusLost(CurrentGUI_Focused);
+      IsFocused = false;
+    } else {
+      /* Else, we have to add a newline character. */
+      /* To do so, we loop over the entire string and move the characters accordingly. */ 
+      for (size_t i = 0; i <= strlen(alloc); i++) {
+        /* If the cursor position is equal to i, then insert to the new buffer \n at cursor position and move 
+         * the old character by one. */
+        if (i == Cursor) {
+          alloc[i] = '\n';
+          alloc[i + 1] = GUI->Text[i];
+          continue;
+        /* If i is larger than the cursor position then move the next character by one 
+         * as in the previous statement we inserted \n at cursor position and moved the rest of the string by one */
+        } else if (i > Cursor) {
+          alloc[i + 1] = GUI->Text[i];
+        /* If it's below cursor then copy the text as it is. */
         } else {
-            for (size_t i = 0; i <= strlen(alloc); i++) {
-                if (i == Cursor) {
-                    alloc[i] = '\n';
-                    alloc[i + 1] = GUI->Text[i];
-                    continue;
-                } else if (i > Cursor) {
-                    alloc[i + 1] = GUI->Text[i];
-                } else {
-                    alloc[i] = GUI->Text[i];
-                }
-            };
-
-            Cursor = Cursor + 1;
+          alloc[i] = GUI->Text[i];
         }
+      };
+      
+      /* Move the cursor after the newline character. */
+      Cursor = Cursor + 1;
     }
-    else if(strcmp(str, "BACKSPACE") == 0) {
-        strcpy(alloc, GUI->Text);
-        for (size_t i = (Cursor - 1); alloc[i] != '\0'; i++) {
-            alloc[i] = alloc[i + 1];
-        }
+  }
+  else if(strcmp(str, "BACKSPACE") == 0) {
+    /* Copy the string and then for every character which is after Cursor - 1 replace with the next character, thus 
+     * removing one character. */
+    strcpy(alloc, GUI->Text);
+    for (size_t i = (Cursor - 1); alloc[i] != '\0'; i++)
+      alloc[i] = alloc[i + 1];
+    
+    /* If the cursor is above 0, move it one character behind */
+    if (Cursor > 0)
+      Cursor -= 1;
+  }
+  else {
+    /* If no special character was detected, insert the character normally. 
+     * Inserting a character goes like inserting a newline character.*/
+    for (size_t i = 0; i <= strlen(alloc); i++) {
+      if (i == Cursor) {
+        alloc[i] = str[0];
+        alloc[i + 1] = GUI->Text[i];
+        continue;
+      } else if (i > Cursor) {
+        alloc[i + 1] = GUI->Text[i];
+      } else {
+        alloc[i] = GUI->Text[i];
+      }
+    };
 
-        if (Cursor > 0)
-            Cursor -= 1;
-    }
-    else {
-        for (size_t i = 0; i <= strlen(alloc); i++) {
-            if (i == Cursor) {
-                alloc[i] = str[0];
-                alloc[i + 1] = GUI->Text[i];
-                continue;
-            } else if (i > Cursor) {
-                alloc[i + 1] = GUI->Text[i];
-            } else {
-                alloc[i] = GUI->Text[i];
-            }
-        };
-
-        Cursor = Cursor + 1;
-    }
-    free(GUI->Text);
-
-    GUI->Text = alloc;
-    UpdateGUI(CurrentGUI_Focused);
+    Cursor = Cursor + 1;
+  }
+  /* Free the old text and update the GUI. */
+  free(GUI->Text);
+  
+  GUI->Text = alloc;
+  UpdateGUI(CurrentGUI_Focused, true);
 }
 
-void ScrollFrame(int WheelSpeed) {
-  CurrentList = -1;
-  LastElement = -1;
- 
+void ScrollFrame(int WheelSpeed) { 
   for (int i = 0; i <= LastGUI_item; i++) {
-    int isColliding = CollosionRectPoint(GuiArray[i], MouseX, MouseY);
+    bool isColliding = CollosionRectPoint(GuiArray[i], MouseX, MouseY);
 
-    if (isColliding && GuiArray[i]->ScrollActive == true) {
-    // printf("X: %i, Y: %i\n", GuiArray[i]->CavanasX, GuiArray[i]->CavanasY);
-    if (GuiArray[i]->HorizontalScrolling == false)
-      GuiArray[i]->CavanasY -= WheelSpeed;
-    else
-      GuiArray[i]->CavanasX += WheelSpeed;
+    if (isColliding && GuiArray[i]->ScrollActive == true && GuiArray[i]->Visible == true) {
+      printf("X: %i, Y: %i\n", GuiArray[i]->CavnasX, GuiArray[i]->CavnasY);
+      if (GuiArray[i]->HorizontalScrolling == false)
+        GuiArray[i]->CavnasY -= WheelSpeed;
+      else
+        GuiArray[i]->CavnasX += WheelSpeed;
     }
 
     for (int j = 0; j <= LastGUI_item; j++)
       if (GuiArray[j]->Parent == i)
-        UpdateGUI(j);
+        UpdateGUI(j, false);
   }
 }
 
@@ -259,34 +283,34 @@ void ProcessInput() {
         else if (event.key.keysym.sym == SDLK_LEFT && IsFocused) {
           if (Cursor >= 1)
             Cursor--;
-          }
+        }
         else if (event.key.keysym.sym == SDLK_RIGHT && IsFocused) {
           if (Cursor < strlen(GuiArray[CurrentGUI_Focused]->Text))
             Cursor++;
-          }
+        }
 
-          Inputs[event.key.keysym.scancode] = true;
-          break;
-        case SDL_KEYUP:
-          Inputs[event.key.keysym.scancode] = false;
-          break;
-        case SDL_MOUSEWHEEL:
-          ScrollFrame(event.wheel.y);
-          break;
-        case SDL_MOUSEMOTION:
-          SDL_GetMouseState(&MouseX, &MouseY);
-          break;
-        case SDL_MOUSEBUTTONUP:
-          if (event.button.button == SDL_BUTTON_LEFT) {
-            Inputs[257] = false;
-            LeftButtonDown = false;
-          } else if (event.button.button == SDL_BUTTON_RIGHT)
-            Inputs[258] = false;
-          
-          break;
-        case SDL_MOUSEBUTTONDOWN:
-          if (event.button.button == SDL_BUTTON_LEFT) {
-            Inputs[257] = true;
+        Inputs[event.key.keysym.scancode] = true;
+        break;
+      case SDL_KEYUP:
+        Inputs[event.key.keysym.scancode] = false;
+        break;
+      case SDL_MOUSEWHEEL:
+        ScrollFrame(event.wheel.y);
+        break;
+      case SDL_MOUSEMOTION:
+        SDL_GetMouseState(&MouseX, &MouseY);
+        break;
+      case SDL_MOUSEBUTTONUP:
+        if (event.button.button == SDL_BUTTON_LEFT) {
+          Inputs[257] = false;
+          LeftButtonDown = false;
+        } else if (event.button.button == SDL_BUTTON_RIGHT)
+          Inputs[258] = false;
+
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        if (event.button.button == SDL_BUTTON_LEFT) {
+          Inputs[257] = true;
 
           if (IsFocused) {
             IsFocused = false;
@@ -294,189 +318,204 @@ void ProcessInput() {
           }
 
           LeftButtonDown = true;
-          } else if (event.button.button == SDL_BUTTON_RIGHT)
-            Inputs[258] = true;
-          
-          break;
-          case SDL_TEXTINPUT:
-            WriteToTextBox(event.text.text);
-        }
+        } else if (event.button.button == SDL_BUTTON_RIGHT)
+          Inputs[258] = true;
+
+        break;
+      case SDL_TEXTINPUT:
+        WriteToTextBox(event.text.text);
     }
+  }
 }
 
 int ParentHasList(int GUI_Index) {
-    struct GuiProperties GUI = *GuiArray[GUI_Index]; /* Dereference the pointer */
+  for (int i = 0; i <= LastList; i++)
+    if (GuiArray[GUI_Index]->Parent == ListArray[i]->Parent)
+      return i;
 
-    for (int i = 0; i <= LastList; i++)
-      if (GUI.Parent == ListArray[i]->Parent)
-        return i;
-
-    return -1;
+  return -1;
 }
 
-void UpdateGUI(int GUI_Index) {
-    /* Variables */
-    // static int CurrentList = -1, LastElement = -1;
-    int List = ParentHasList(GUI_Index);
+void UpdateGUI(int GUI_Index, bool ClearIndexes) {
+  /* Updating the GUI consists of multiple steps:
+   * 1. Positioning, where we account for the Parent's position and respect the UIList contained within the element;
+   * 2. Update the font and its positions. Also check if the text still fits within the GUI's borders;
+   * 3. Report any error which happened while updating the UI.
+   * */
+  if (ClearIndexes == true) {
+    LastElement = -1;
+    CurrentList = -1;
+  }
 
-    int success = 1;
-    char error[100] = "empty";
-    struct GuiProperties GUI = *GuiArray[GUI_Index];
+  int List = ParentHasList(GUI_Index);
+  int success = 1;
 
-    SDL_Color Color = {GUI.TextColor.R, GUI.TextColor.G, GUI.TextColor.B, GUI.TextColor.A};
-    SDL_Surface *surfaceMessage;
+  char *error = "empty";
+  struct GuiProperties GUI = *GuiArray[GUI_Index];
 
-    if (List != CurrentList) {
-        LastElement = GUI_Index;
-        CurrentList = List;
-    }
+  SDL_Color Color = {GUI.TextColor.R, GUI.TextColor.G, GUI.TextColor.B, GUI.TextColor.A};
+  SDL_Surface *surfaceMessage;
 
-    /* Positioning */
+  if (List != CurrentList) {
+    LastElement = GUI_Index;
+    CurrentList = List;
+  }
 
-    if (CurrentList == -1) {
-        if (GUI.Parent > -1 && GUI.Parent < LastGUI_item) {
-            int Parent = GUI.Parent;
+  /* Positioning */
 
-            GuiArray[GUI_Index]->PositionX = GUI.PositionX + GuiArray[Parent]->PositionX;
-            GuiArray[GUI_Index]->PositionY = GUI.PositionY + GuiArray[Parent]->PositionY;
-        }
-    } else {
+  if (CurrentList == -1) {
+    if (GUI.Parent > -1 && GUI.Parent < LastGUI_item) {
       int Parent = GUI.Parent;
 
-      if (LastElement == GUI_Index) {
-        GuiArray[GUI_Index]->PositionX = GuiArray[Parent]->PositionX + GuiArray[Parent]->CavanasX;
-        GuiArray[GUI_Index]->PositionY = GuiArray[Parent]->PositionY + GuiArray[Parent]->CavanasY;
-      } else if (ListArray[CurrentList]->Direction == DOWN) {
-        GuiArray[GUI_Index]->PositionX = GuiArray[Parent]->PositionX;
-        GuiArray[GUI_Index]->PositionY = GuiArray[LastElement]->PositionY + GUI.SizeY + ListArray[CurrentList]->PaddingY;
-      } else if (ListArray[CurrentList]->Direction == UP) {
-        GuiArray[GUI_Index]->PositionX = GuiArray[Parent]->PositionX + GuiArray[Parent]->CavanasX;
-        GuiArray[GUI_Index]->PositionY = GuiArray[LastElement]->PositionY - GUI.SizeY - ListArray[CurrentList]->PaddingY;
-      } else if (ListArray[CurrentList]->Direction == DLEFT) {
-        GuiArray[GUI_Index]->PositionX = GuiArray[LastElement]->PositionX - GUI.SizeX - ListArray[CurrentList]->PaddingX;
-        GuiArray[GUI_Index]->PositionY = GuiArray[Parent]->PositionY + GuiArray[Parent]->CavanasY;
-      } else if (ListArray[CurrentList]->Direction == DRIGHT) {
-        GuiArray[GUI_Index]->PositionX = GuiArray[LastElement]->PositionX + GUI.SizeX + ListArray[CurrentList]->PaddingX;
-        GuiArray[GUI_Index]->PositionY = GuiArray[Parent]->PositionY + GuiArray[Parent]->CavanasY;
-      }
-        
-        // printf("New X: %i, new Y: %i\n", GuiArray[GUI_Index]->PositionX, GuiArray[GUI_Index]->PositionY);
-      LastElement = GUI_Index;
+      GuiArray[GUI_Index]->PositionX = GUI.PositionX + GuiArray[Parent]->PositionX;
+      GuiArray[GUI_Index]->PositionY = GUI.PositionY + GuiArray[Parent]->PositionY;
+    }
+  } else {
+    int Parent = GUI.Parent;
+
+    if (LastElement == GUI_Index) {
+      GuiArray[GUI_Index]->PositionX = GuiArray[Parent]->PositionX + GuiArray[Parent]->CavnasX;
+      GuiArray[GUI_Index]->PositionY = GuiArray[Parent]->PositionY + GuiArray[Parent]->CavnasY;
+    } else if (ListArray[CurrentList]->Direction == DOWN) {
+      GuiArray[GUI_Index]->PositionX = GuiArray[Parent]->PositionX;
+      GuiArray[GUI_Index]->PositionY = GuiArray[LastElement]->PositionY + GUI.SizeY + ListArray[CurrentList]->PaddingY;
+    } else if (ListArray[CurrentList]->Direction == UP) {
+      GuiArray[GUI_Index]->PositionX = GuiArray[Parent]->PositionX + GuiArray[Parent]->CavnasX;
+      GuiArray[GUI_Index]->PositionY = GuiArray[LastElement]->PositionY - GUI.SizeY - ListArray[CurrentList]->PaddingY;
+    } else if (ListArray[CurrentList]->Direction == DLEFT) {
+      GuiArray[GUI_Index]->PositionX = GuiArray[LastElement]->PositionX - GUI.SizeX - ListArray[CurrentList]->PaddingX;
+      GuiArray[GUI_Index]->PositionY = GuiArray[Parent]->PositionY + GuiArray[Parent]->CavnasY;
+    } else if (ListArray[CurrentList]->Direction == DRIGHT) {
+      GuiArray[GUI_Index]->PositionX = GuiArray[LastElement]->PositionX + GUI.SizeX + ListArray[CurrentList]->PaddingX;
+      GuiArray[GUI_Index]->PositionY = GuiArray[Parent]->PositionY + GuiArray[Parent]->CavnasY;
     }
 
-    /* Font related */
-    if (!GUI.Font)
-        sprintf(error, "[PUIUS GUI] GuiArray[%i].Font is inexistent!\n", GUI_Index);
+    // printf("New X: %i, new Y: %i\n", GuiArray[GUI_Index]->PositionX, GuiArray[GUI_Index]->PositionY);
+    LastElement = GUI_Index;
+  }
 
-    success = TTF_SetFontSize(GuiArray[GUI_Index]->Font, GUI.TextSize);
-    if (success == -1)
-        sprintf(error, "[PUIUS GUI] TTF_SetFontSize failed for GUI element with %i as index!\n", GUI_Index);
+  /*if (GUI.Parent > -1) {
+    SDL_Rect Area = CollisionArea(&GUI, GuiArray[GUI.Parent]);
+    if (CollisionGUIs(&GUI, GuiArray[GUI.Parent]) == true)
+      if (Area.x >= Area.w || Area.y >= Area.h)
+      printf("Area X: %i, Area Y: %i, Area width: %i, Area height: %i!\n", Area.x, Area.y, Area.w, Area.h); 
+  }*/
 
-    TTF_SetFontOutline(GuiArray[GUI_Index]->Font, GuiArray[GUI_Index]->OutlineSize);
+  if (!GUI.Font) {
+    size_t Bytes = snprintf(NULL, 0, "[PUIUS GUI] GuiArray[%i].Font is inexistent!\n", GUI_Index) + 1;
+    error = malloc(Bytes);
+    snprintf(error, Bytes, "[PUIUS GUI] GuiArray[%i].Font is inexistent!\n", GUI_Index);
+  }
 
-    if (GUI.TextWrapped)
-        surfaceMessage = TTF_RenderText_Blended_Wrapped(GUI.Font, GUI.Text, Color, GUI.SizeX);
-    else
-        surfaceMessage = TTF_RenderText_Blended_Wrapped(GUI.Font, GUI.Text, Color, 0);
+  success = TTF_SetFontSize(GuiArray[GUI_Index]->Font, GUI.TextSize);
+  if (success == -1) {
+    size_t Bytes = snprintf(NULL, 0, "[PUIUS GUI] TTF_SetFontSize failed for GUI element with %i as index!\n", GUI_Index) + 1;
+    error = malloc(Bytes);
+    snprintf(error, Bytes, "[PUIUS GUI] TTF_SetFontSize failed for GUI element with %i as index!\n", GUI_Index);
+  }
 
-    SDL_Texture *Message = SDL_CreateTextureFromSurface(GuiArray[GUI_Index]->AssignedRenderer, surfaceMessage);
-    SDL_GetClipRect(surfaceMessage, &GuiArray[GUI_Index]->TextRectangle);
+  TTF_SetFontOutline(GuiArray[GUI_Index]->Font, GuiArray[GUI_Index]->OutlineSize);
 
-    /* Calculate the position based on gui's enums */
-    if (GUI.TextXAlignment == LEFT)
-        GuiArray[GUI_Index]->TextRectangle.x = GuiArray[GUI_Index]->PositionX;
-    else if (GUI.TextXAlignment == RIGHT)
-        GuiArray[GUI_Index]->TextRectangle.x = (GuiArray[GUI_Index]->PositionX + GuiArray[GUI_Index]->SizeX) - GuiArray[GUI_Index]->TextRectangle.w;
-    else if (GUI.TextXAlignment == X_CENTER)
-        GuiArray[GUI_Index]->TextRectangle.x = (GuiArray[GUI_Index]->SizeX / 2 + GuiArray[GUI_Index]->PositionX) - GuiArray[GUI_Index]->TextRectangle.w / 2;
+  if (GUI.TextWrapped)
+    surfaceMessage = TTF_RenderText_Blended_Wrapped(GUI.Font, GUI.Text, Color, GUI.SizeX);
+  else
+    surfaceMessage = TTF_RenderText_Blended_Wrapped(GUI.Font, GUI.Text, Color, 0);
 
-    if (GUI.TextYAlignment == TOP)
-        GuiArray[GUI_Index]->TextRectangle.y = GuiArray[GUI_Index]->PositionY;
-    else if (GUI.TextYAlignment == Y_CENTER)
-        GuiArray[GUI_Index]->TextRectangle.y = (GuiArray[GUI_Index]->SizeY / 2 + GuiArray[GUI_Index]->PositionY) - GuiArray[GUI_Index]->TextRectangle.h / 2;
-    else if (GUI.TextYAlignment == BOTTOM)
-        GuiArray[GUI_Index]->TextRectangle.y = (GuiArray[GUI_Index]->PositionY + GuiArray[GUI_Index]->SizeY) - GuiArray[GUI_Index]->TextRectangle.h;
+  SDL_Texture *Message = SDL_CreateTextureFromSurface(GuiArray[GUI_Index]->AssignedRenderer, surfaceMessage);
+  SDL_GetClipRect(surfaceMessage, &GuiArray[GUI_Index]->TextRectangle);
 
+  /* Calculate the position based on gui's enums */
+  if (GUI.TextXAlignment == LEFT)
+    GuiArray[GUI_Index]->TextRectangle.x = GuiArray[GUI_Index]->PositionX;
+  else if (GUI.TextXAlignment == RIGHT)
+    GuiArray[GUI_Index]->TextRectangle.x = (GuiArray[GUI_Index]->PositionX + GuiArray[GUI_Index]->SizeX) - GuiArray[GUI_Index]->TextRectangle.w;
+  else if (GUI.TextXAlignment == X_CENTER)
+    GuiArray[GUI_Index]->TextRectangle.x = (GuiArray[GUI_Index]->SizeX / 2 + GuiArray[GUI_Index]->PositionX) - GuiArray[GUI_Index]->TextRectangle.w / 2;
 
-    /* TextFits logic */
-    if (GUI.TextRectangle.w > GUI.SizeX)
-        GuiArray[GUI_Index]->TextFits = 0;
-    else
-        GuiArray[GUI_Index]->TextFits = 1;
+  if (GUI.TextYAlignment == TOP)
+    GuiArray[GUI_Index]->TextRectangle.y = GuiArray[GUI_Index]->PositionY;
+  else if (GUI.TextYAlignment == Y_CENTER)
+    GuiArray[GUI_Index]->TextRectangle.y = (GuiArray[GUI_Index]->SizeY / 2 + GuiArray[GUI_Index]->PositionY) - GuiArray[GUI_Index]->TextRectangle.h / 2;
+  else if (GUI.TextYAlignment == BOTTOM)
+    GuiArray[GUI_Index]->TextRectangle.y = (GuiArray[GUI_Index]->PositionY + GuiArray[GUI_Index]->SizeY) - GuiArray[GUI_Index]->TextRectangle.h; 
+  
+  GuiArray[GUI_Index]->TextFits = !(GUI.TextRectangle.w >= GUI.SizeX || GUI.TextRectangle.h >= GUI.SizeY); 
+  
+  if (GuiArray[GUI_Index]->TextFits == false)
+    GuiArray[GUI_Index]->TextColor = RED;
+  else
+    GuiArray[GUI_Index]->TextColor = WHITE;
 
-    if (GUI.TextRectangle.h > GUI.SizeY)
-        GuiArray[GUI_Index]->TextFits = 0;
-    else
-        GuiArray[GUI_Index]->TextFits = 1;
+  /* Inherit parent properties */
+  if (GUI.Parent > -1)
+    GuiArray[GUI_Index]->Visible = GuiArray[GUI.Parent]->Visible;
 
-    /* Inherit parent properties */
-    if (GUI.Parent > -1) {
-        GuiArray[GUI_Index]->Visible = GuiArray[GUI.Parent]->Visible;
-    }
+  /* Ending */
+  if (strcmp(error, "empty") != 0) {
+    GUI_INTERNAL_ERROR(error);
+    free(error);
+  } 
 
-    /* Ending */
-    if (strcmp(error, "empty") != 0) {
-        GUI_INTERNAL_ERROR(error);
-        GUI_INTERNAL_ERROR(SDL_GetError());
-    }
-
-    GuiArray[GUI_Index]->TextureText = Message;
-    SDL_FreeSurface(surfaceMessage);
+  GuiArray[GUI_Index]->TextureText = Message; 
+  SDL_FreeSurface(surfaceMessage);
 }
 
 void UpdateAllGUI() {
+  for (int i = 0; i <= LastGUI_item; i++)
+    UpdateGUI(i, false);
+
   CurrentList = -1;
   LastElement = -1;
-
-  for (int i = 0; i <= LastGUI_item; i++)
-    UpdateGUI(i);
 }
 
 void HandleGUI(int CurrentGUI) {
-    int isColliding = CollosionRectPoint(GuiArray[CurrentGUI], MouseX, MouseY);
+  if (GuiArray[CurrentGUI]->Visible == false)
+    return;
 
-    if (isColliding == true) {
-        if (GuiArray[CurrentGUI]->Type == BUTTON || GuiArray[CurrentGUI]->Type == TEXTBOX) {
-            if (GuiArray[CurrentGUI]->Hovered == false && GuiArray[CurrentGUI]->Active == true) {
-                GuiArray[CurrentGUI]->Hovered = true;
-                GuiArray[CurrentGUI]->MouseEnter(CurrentGUI);
-            }
+  bool isColliding = CollosionRectPoint(GuiArray[CurrentGUI], MouseX, MouseY);
 
-        if (LeftButtonDown) {
-            /* Trigger MouseDown callback */
-                if (GuiArray[CurrentGUI]->Pressed == false && GuiArray[CurrentGUI]->Active == true)
-                    GuiArray[CurrentGUI]->MouseDown(CurrentGUI);
+  if (isColliding == true) {
+    if (GuiArray[CurrentGUI]->Type == BUTTON || GuiArray[CurrentGUI]->Type == TEXTBOX) {
+      if (GuiArray[CurrentGUI]->Hovered == false && GuiArray[CurrentGUI]->Active == true) {
+        GuiArray[CurrentGUI]->Hovered = true;
+        GuiArray[CurrentGUI]->MouseEnter(CurrentGUI);
+      }
 
-                /* Change Property */
-                GuiArray[CurrentGUI]->Pressed = true;
-                Cursor = strlen(GuiArray[CurrentGUI]->Text);
+      if (LeftButtonDown) {
+        /* Trigger MouseDown callback */
+        if (GuiArray[CurrentGUI]->Pressed == false && GuiArray[CurrentGUI]->Active == true)
+          GuiArray[CurrentGUI]->MouseDown(CurrentGUI);
 
-                if (IsFocused && GuiArray[CurrentGUI]->Type == TEXTBOX)
-                    CurrentGUI_Focused = CurrentGUI;
-                else if (!IsFocused) {
-                    SDL_StartTextInput();
+        /* Change Property */
+        GuiArray[CurrentGUI]->Pressed = true;
+        Cursor = strlen(GuiArray[CurrentGUI]->Text);
 
-                    CurrentGUI_Focused = CurrentGUI;
-                    IsFocused = true;
-                    GuiArray[CurrentGUI]->Focused = true;
-                }
+        if (IsFocused && GuiArray[CurrentGUI]->Type == TEXTBOX)
+          CurrentGUI_Focused = CurrentGUI;
+        else if (!IsFocused) {
+          SDL_StartTextInput();
 
-            } else {
-                if (GuiArray[CurrentGUI]->Pressed == true) {
-                    GuiArray[CurrentGUI]->Pressed = false;
-                    GuiArray[CurrentGUI]->MouseUp(CurrentGUI);
-                }
-            }
+          CurrentGUI_Focused = CurrentGUI;
+          IsFocused = true;
+          GuiArray[CurrentGUI]->Focused = true;
         }
-    } else {
-        if (GuiArray[CurrentGUI]->Type == BUTTON || GuiArray[CurrentGUI]->Type == TEXTBOX) {
-            if (GuiArray[CurrentGUI]->Hovered == true && GuiArray[CurrentGUI]->Active == true) {
-                GuiArray[CurrentGUI]->MouseLeave(CurrentGUI);
-                GuiArray[CurrentGUI]->Hovered = false;
-                GuiArray[CurrentGUI]->Pressed = false;
-            }
+
+      } else {
+        if (GuiArray[CurrentGUI]->Pressed == true) {
+          GuiArray[CurrentGUI]->Pressed = false;
+          GuiArray[CurrentGUI]->MouseUp(CurrentGUI);
         }
+      }
     }
+  } else {
+    if (GuiArray[CurrentGUI]->Type == BUTTON || GuiArray[CurrentGUI]->Type == TEXTBOX) {
+      if (GuiArray[CurrentGUI]->Hovered == true && GuiArray[CurrentGUI]->Active == true) {
+        GuiArray[CurrentGUI]->MouseLeave(CurrentGUI);
+        GuiArray[CurrentGUI]->Hovered = false;
+        GuiArray[CurrentGUI]->Pressed = false;
+      }
+    }
+  }
 }
 
 struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width, int Height) {
@@ -527,34 +566,36 @@ struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width,
 
   /* Place some default enums for TextXAlignment and TextYAlignment */
   newGUI->TextXAlignment = DefaultX_Alignment;
-  newGUI->TextYAlignment = DefaultY_Alignment;
+  newGUI->TextYAlignment = DefaultY_Alignment; 
 
-  newGUI->Text = "Text";
-
-  if (GUI == TEXTLABEL)
+  if (GUI == TEXTLABEL) {
+    newGUI->Text = "Text";
     newGUI->TextEditable = false;
-  else if (GUI == BUTTON)
+  }
+  else if (GUI == BUTTON) {
+    newGUI->Text = "TextButton";
     newGUI->TextEditable = false;
+  } 
   else if (GUI == TEXTBOX) {
     newGUI->TextEditable = true;
     char *alloc = (char*)malloc(5 * sizeof(char));
 
     if (!alloc) {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to allocate space for string.\n");
+      GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to allocate space for string.\n");
     } else {
-        newGUI->Text = alloc;
-        strcpy(newGUI->Text, "Text");
-      }
+      newGUI->Text = alloc;
+      strcpy(newGUI->Text, "Text");
+    }
   } else if (GUI == IMAGELABEL) {
-      newGUI->TextEditable = false;
-      newGUI->Text = "";
+    newGUI->TextEditable = false;
+    newGUI->Text = "";
   } else if (GUI == SCROLLFRAME) {
-      newGUI->TextEditable = false;
-      newGUI->CavanasY = 0;
-      newGUI->CavanasX = 0;
-      newGUI->ScrollActive = true;
-      newGUI->HorizontalScrolling = false;
-      newGUI->CavanasSpeed = 1;
+    newGUI->TextEditable = false;
+    newGUI->CavnasY = 0;
+    newGUI->CavnasX = 0;
+    newGUI->ScrollActive = true;
+    newGUI->HorizontalScrolling = false;
+    newGUI->CavnasSpeed = 1;
   }
 
   SDL_Surface *surfaceMessage = TTF_RenderText_Blended(Font, newGUI->Text, SDL_BLACK);
@@ -574,118 +615,122 @@ struct GuiProperties* PSConstructGUI(enum GUI_TYPE GUI, int X, int Y, int Width,
 }
 
 struct GuiProperties *PConstructGUI(GUI_TYPE GUI, int X, int Y) {
-    /* A function which simply calls the internal constructor, which is exposed by the header file. */
-    return PSConstructGUI(GUI, X, Y, DEFAULT_ELEMENT_WIDTH, DEFAULT_ELEMENT_HEIGHT);
+  /* A function which simply calls the internal constructor, which is exposed by the header file. */
+  return PSConstructGUI(GUI, X, Y, DEFAULT_ELEMENT_WIDTH, DEFAULT_ELEMENT_HEIGHT);
 }
 
 struct ListProperties *ConstructList(LIST_TYPE Type, int Parent, int PaddingX, int PaddingY) {
-    LastList++;
-    struct ListProperties *newGUI = malloc(sizeof(struct ListProperties));
+  LastList++;
+  struct ListProperties *newGUI = malloc(sizeof(struct ListProperties));
 
-    newGUI->Parent = Parent;
-    newGUI->PaddingX = PaddingX;
-    newGUI->PaddingY = PaddingY;
+  newGUI->Parent = Parent;
+  newGUI->PaddingX = PaddingX;
+  newGUI->PaddingY = PaddingY;
 
-    newGUI->Type = Type;
-    newGUI->SortOrder = LAYOUTORDER;
-    newGUI->Direction = DOWN;
+  newGUI->Type = Type;
+  newGUI->SortOrder = LAYOUTORDER;
+  newGUI->Direction = DOWN;
 
-    newGUI->Wraps = false;
-    ListArray[LastList] = newGUI;
-    return newGUI;
+  newGUI->Wraps = false;
+  ListArray[LastList] = newGUI;
+  return newGUI;
 }
 
 void DrawCursor() {
-    // TODO: Ensure that DrawCursor works with TextWrapped enabled
-    if (GuiArray[CurrentGUI_Focused]->TextEditable == false)
-        return;
+  // TODO: Ensure that DrawCursor works with TextWrapped enabled
+  if (GuiArray[CurrentGUI_Focused]->TextEditable == false)
+    return;
 
-    int CursorY = 1;
-    int TextWidth, TextHeight;
+  int CursorY = 1;
+  int TextWidth, TextHeight;
 
-    char *alloc = (char*)malloc(Cursor * sizeof(char) + 2);
-    alloc[0] = '\0';
-    struct GuiProperties GUI = *GuiArray[CurrentGUI_Focused];
+  char *alloc = (char*)malloc(Cursor * sizeof(char) + 2);
+  alloc[0] = '\0';
 
-    char s = ' '; /* :moyai: */
+  char s = ' '; /* :moyai: */
 
-    for (size_t i = 0; i < Cursor; i++) {
-        if (GUI.Text[i] == '\n') {
-            alloc[0] = '\0';
-            CursorY += 1;
-        }
-
-        if (GUI.Text[i] != '\n')
-            strncat(alloc, &GUI.Text[i], 1);
-        else
-            strncat(alloc, &s, 1);
+  for (size_t i = 0; i < Cursor; i++) {
+    if (GuiArray[CurrentGUI_Focused]->Text[i] == '\n') {
+      alloc[0] = '\0';
+      CursorY += 1;
     }
 
-    TTF_SizeText(GUI.Font, alloc, &TextWidth, NULL);
-    TextHeight = TTF_FontHeight(GUI.Font);
-    int CursorX = TextWidth + GUI.TextRectangle.x;
+    if (GuiArray[CurrentGUI_Focused]->Text[i] != '\n')
+      strncat(alloc, &GuiArray[CurrentGUI_Focused]->Text[i], 1);
+    else
+      strncat(alloc, &s, 1);
+  }
 
-    if (CursorY > 1)
-        CursorX -= 4;
+  TTF_SizeText(GuiArray[CurrentGUI_Focused]->Font, alloc, &TextWidth, NULL);
+  TextHeight = TTF_FontHeight(GuiArray[CurrentGUI_Focused]->Font);
+  int CursorX = TextWidth + GuiArray[CurrentGUI_Focused]->TextRectangle.x;
 
-    CursorY = CursorY * TextHeight + GUI.TextRectangle.y;
+  if (CursorY > 1)
+    CursorX -= 4;
 
-    DrawLine(CursorX, CursorY, CursorX, CursorY - TextHeight, InitColor3(255 - GUI.BackgroundColor.R, 255 - GUI.BackgroundColor.G, 255 - GUI.BackgroundColor.B, GUI.BackgroundColor.A), GUI.AssignedRenderer);
-    free(alloc);
+  CursorY = CursorY * TextHeight + GuiArray[CurrentGUI_Focused]->TextRectangle.y;
+
+  DrawLine(CursorX, CursorY, CursorX, CursorY - TextHeight, 
+           InitColor3(255 - GuiArray[CurrentGUI_Focused]->BackgroundColor.R, 
+                      255 - GuiArray[CurrentGUI_Focused]->BackgroundColor.G, 
+                      255 - GuiArray[CurrentGUI_Focused]->BackgroundColor.B, 
+                      GuiArray[CurrentGUI_Focused]->BackgroundColor.A), 
+           GuiArray[CurrentGUI_Focused]->AssignedRenderer);
+  free(alloc);
 }
 
 void DrawGUI(int i) {
-    struct GuiProperties GUI = *GuiArray[i];
-    struct Color3 color = InitColor3(GUI.BorderColor.R, GUI.BorderColor.G, GUI.BorderColor.B, GUI.BorderColor.A);
+  struct Color3 color = InitColor3(GuiArray[i]->BorderColor.R, GuiArray[i]->BorderColor.G, GuiArray[i]->BorderColor.B, GuiArray[i]->BorderColor.A);
 
-    // (x, y) - topleft
-    // (x + sx, y) - topright
-    // (x, y + sy) - bottomleft
-    // (x + sx, y + sy) - bottomright
+  // (x, y) - topleft
+  // (x + sx, y) - topright
+  // (x, y + sy) - bottomleft
+  // (x + sx, y + sy) - bottomright
+  
+  SDL_Rect Rect = {GuiArray[i]->PositionX, GuiArray[i]->PositionY, GuiArray[i]->SizeX, GuiArray[i]->SizeY};
+  DrawRectangleRec(Rect, GuiArray[i]->BackgroundColor, GuiArray[i]->AssignedRenderer); 
+  if (GuiArray[i]->Type == IMAGELABEL)
+    DrawTextureEx(GuiArray[i]);
 
-    DrawRectangleRec(&GUI);
-    DrawText(&GUI);
+  DrawText(GuiArray[i]);
 
-    if (GUI.Type == IMAGELABEL)
-        DrawTextureEx(&GUI);
+  for (int borderNum = 0; borderNum < GuiArray[i]->BorderSize; borderNum++) {
+    SDL_Point topLeft = InitPoint(GuiArray[i]->PositionX, GuiArray[i]->PositionY);
+    SDL_Point topRight = InitPoint(GuiArray[i]->PositionX + GuiArray[i]->SizeX, GuiArray[i]->PositionY);
+    SDL_Point bottomLeft = InitPoint(GuiArray[i]->PositionX, GuiArray[i]->PositionY + GuiArray[i]->SizeY);
+    SDL_Point bottomRight = InitPoint(GuiArray[i]->PositionX + GuiArray[i]->SizeX, GuiArray[i]->PositionY + GuiArray[i]->SizeY);
 
-    for (int borderNum = 0; borderNum < GUI.BorderSize; borderNum++) {
-        SDL_Point topLeft = InitPoint(GUI.PositionX, GUI.PositionY);
-        SDL_Point topRight = InitPoint(GUI.PositionX + GUI.SizeX, GUI.PositionY);
-        SDL_Point bottomLeft = InitPoint(GUI.PositionX, GUI.PositionY + GUI.SizeY);
-        SDL_Point bottomRight = InitPoint(GUI.PositionX + GUI.SizeX, GUI.PositionY + GUI.SizeY);
+    DrawLine(topLeft.x, topLeft.y + borderNum, topRight.x, topRight.y + borderNum, color, GuiArray[i]->AssignedRenderer); /* Top line */
+    DrawLine(topLeft.x + borderNum, topLeft.y, bottomLeft.x + borderNum, bottomLeft.y, color, GuiArray[i]->AssignedRenderer); /* Left line */
+    DrawLine(bottomRight.x, bottomRight.y - borderNum, bottomLeft.x, bottomRight.y - borderNum, color, GuiArray[i]->AssignedRenderer); /* Bottom line */
+    DrawLine(bottomRight.x - borderNum, bottomRight.y, topRight.x - borderNum, topRight.y, color, GuiArray[i]->AssignedRenderer); /* Right line */
+  }
 
-        DrawLine(topLeft.x, topLeft.y + borderNum, topRight.x, topRight.y + borderNum, color, GUI.AssignedRenderer); /* Top line */
-        DrawLine(topLeft.x + borderNum, topLeft.y, bottomLeft.x + borderNum, bottomLeft.y, color, GUI.AssignedRenderer); /* Left line */
-        DrawLine(bottomRight.x, bottomRight.y - borderNum, bottomLeft.x, bottomRight.y - borderNum, color, GUI.AssignedRenderer); /* Bottom line */
-        DrawLine(bottomRight.x - borderNum, bottomRight.y, topRight.x - borderNum, topRight.y, color, GUI.AssignedRenderer); /* Right line */
-    }
-
-    if (IsFocused == true && CurrentGUI_Focused > -1)
-        DrawCursor();
+  if (IsFocused == true && CurrentGUI_Focused > -1)
+    DrawCursor();
 }
 
 void RenderGUI() {
-    int LargestZindex = 2;
+  int LargestZindex = 2;
 
-    for (int x = 0; x < 40; x++) {
-        if (LargestZindex + 1 == x)
-            break;
+  for (int x = 0; x < 40; x++) {
+    if (LargestZindex + 1 == x)
+      break;
 
-        for (int i = 0; i <= LastGUI_item; i++) {
-            if (GuiArray[i]->Zindex == 0)
-                break;
+    for (int i = 0; i <= LastGUI_item; i++) {
+      if (GuiArray[i]->Zindex == 0)
+        break;
 
-            if (GuiArray[i]->Zindex != x || GuiArray[i]->Visible == false)
-                continue;
+      if (GuiArray[i]->Zindex != x || GuiArray[i]->Visible == false)
+        continue;
 
-            if (GuiArray[i]->Zindex > LargestZindex)
-                LargestZindex = GuiArray[i]->Zindex;
+      if (GuiArray[i]->Zindex > LargestZindex)
+        LargestZindex = GuiArray[i]->Zindex;
 
-            HandleGUI(i);
-            DrawGUI(i);
-        }
+      HandleGUI(i);
+      DrawGUI(i);
     }
+  }
 }
 
 int InitGUI(SDL_Renderer *Renderer, char *FontPath, int FontSize) {
@@ -729,25 +774,25 @@ void SetDefaultTextAlignment(TEXT_XALIGNMENT X, TEXT_YALIGNMENT Y) {
 }
 
 int ChangeDefaultFont(char *FontName, int FontSize) {
-    Font = TTF_OpenFont(FontName, FontSize);
+  Font = TTF_OpenFont(FontName, FontSize);
 
-    if (!Font) {
-        GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to load the new font. SDL error:");
-        GUI_INTERNAL_ERROR(SDL_GetError());
-        GUI_INTERNAL_ERROR("\n");
+  if (!Font) {
+    GUI_INTERNAL_ERROR("[PUIUS GUI] Failed to load the new font. SDL error:");
+    GUI_INTERNAL_ERROR(SDL_GetError());
+    GUI_INTERNAL_ERROR("\n");
 
-        return false;
-    }
-    return true;
+    return false;
+  }
+  return true;
 }
 
 void UninitGUI() {
-    for (int i = 0; i < LastGUI_item; i++) {
-        SDL_DestroyTexture(GuiArray[i]->TextureText);
+  for (int i = 0; i < LastGUI_item; i++) {
+    SDL_DestroyTexture(GuiArray[i]->TextureText);
 
-        if (GuiArray[i]->Type == TEXTBOX)
-            free(GuiArray[i]->Text);
+    if (GuiArray[i]->Type == TEXTBOX)
+      free(GuiArray[i]->Text);
 
-        free(GuiArray[i]);
-    }
+    free(GuiArray[i]);
+  }
 }
